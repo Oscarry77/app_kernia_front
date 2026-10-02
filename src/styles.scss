@@ -1,1 +1,77 @@
-/* You can add global styles to this file, and also import other style files */
+@use 'app/styles/comercializa-variables' as v;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background: v.$bg-app;
+  color: v.$text-primary;
+}
+
+// SweetAlert2 trae su propio tema claro por defecto -- se retema aquí para
+// que sus diálogos (confirmaciones, alertas) no rompan el tema oscuro.
+.swal2-popup {
+  background: v.$bg-card !important;
+  color: v.$text-primary !important;
+  border: 1px solid v.$border-card;
+  border-radius: v.$radius-lg !important;
+}
+
+.swal2-title,
+.swal2-html-container {
+  color: v.$text-primary !important;
+}
+
+.swal2-html-container {
+  color: v.$text-secondary !important;
+}
+
+.swal2-close {
+  color: v.$text-muted !important;
+
+  &:hover { color: v.$text-primary !important; }
+}
+
+.swal2-input,
+.swal2-textarea,
+.swal2-select {
+  background: v.$bg-app !important;
+  color: v.$text-primary !important;
+  border: 1px solid v.$border-card !important;
+  box-shadow: none !important;
+
+  &:focus {
+    border-color: v.$primary !important;
+    box-shadow: 0 0 0 3px v.$primary-light !important;
+  }
+}
+
+.swal2-actions {
+  .swal2-confirm {
+    background: v.$primary !important;
+    color: v.$text-on-primary !important;
+
+    &:focus { box-shadow: 0 0 0 3px v.$primary-light !important; }
+  }
+
+  .swal2-cancel {
+    background: v.$bg-card-raised !important;
+    color: v.$text-secondary !important;
+    border: 1px solid v.$border-card;
+
+    &:focus { box-shadow: 0 0 0 3px v.$border-card !important; }
+  }
+
+  .swal2-deny {
+    background: v.$danger !important;
+    color: v.$text-on-primary !important;
+  }
+}
+
+.swal2-backdrop-show {
+  background: rgba(0, 0, 0, 0.65) !important;
+}

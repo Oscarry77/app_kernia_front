@@ -1,0 +1,48 @@
+@use '../../styles/comercializa-variables' as v;
+
+.buscador {
+  min-width: 260px;
+}
+
+.fila-clic {
+  cursor: pointer;
+
+  &:hover td, &:focus-visible td { background: v.$bg-card-raised; }
+  &:focus-visible { outline: 2px solid v.$primary; outline-offset: -2px; }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$spacing-xs;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: v.$radius-full;
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-medium;
+  border: 1px solid v.$border-card;
+  color: v.$text-secondary;
+
+  &--activo     { border-color: rgba(76, 175, 125, 0.45); color: #7fdba8; }
+  &--suspendido { border-color: rgba(240, 97, 111, 0.45); color: #f5a1ab; }
+  &--proceso    { border-color: rgba(232, 163, 61, 0.45); color: #f0be74; }
+}
+
+.texto-tenue { color: v.$text-muted; }
+.texto-error { color: v.$danger; }
+
+.ayuda {
+  color: v.$text-muted;
+  font-size: v.$font-size-xs;
+  line-height: 1.4;
+}
+
+code {
+  font-size: v.$font-size-xs;
+  color: v.$text-secondary;
+}

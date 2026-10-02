@@ -1,0 +1,79 @@
+@use '../../styles/comercializa-variables' as v;
+
+.admin-shell {
+  min-height: 100vh;
+  background: v.$bg-content;
+  font-family: v.$font-family;
+}
+
+.admin-shell__topbar {
+  @include v.flex-between;
+  height: v.$topbar-height;
+  padding: 0 v.$spacing-lg;
+  background: v.$bg-sidebar;
+  color: v.$text-on-dark;
+}
+
+.admin-shell__brand {
+  display: flex;
+  align-items: center;
+  gap: v.$spacing-sm;
+  font-weight: v.$font-weight-semibold;
+  font-size: v.$font-size-base;
+}
+
+.admin-shell__nav {
+  display: flex;
+  gap: v.$spacing-lg;
+
+  a {
+    color: v.$text-muted;
+    text-decoration: none;
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-medium;
+    padding: v.$spacing-xs v.$spacing-sm;
+    border-radius: v.$radius-sm;
+    transition: color v.$transition-fast, background v.$transition-fast;
+
+    &:hover {
+      color: v.$text-on-dark;
+    }
+
+    &.active {
+      color: v.$text-on-dark;
+      background: rgba(255, 255, 255, 0.08);
+    }
+  }
+}
+
+.admin-shell__user {
+  display: flex;
+  align-items: center;
+  gap: v.$spacing-md;
+}
+
+.admin-shell__user-name {
+  font-size: v.$font-size-sm;
+  color: v.$text-muted;
+}
+
+.admin-shell__logout {
+  background: transparent;
+  border: 1px solid v.$border-light;
+  color: v.$text-on-dark;
+  border-radius: v.$radius-sm;
+  padding: v.$spacing-xs v.$spacing-md;
+  font-size: v.$font-size-sm;
+  cursor: pointer;
+  transition: background v.$transition-fast;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.admin-shell__content {
+  max-width: v.$content-max-width;
+  margin: 0 auto;
+  padding: v.$spacing-xl v.$spacing-lg;
+}

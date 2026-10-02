@@ -1,0 +1,253 @@
+<div class="crud">
+  <a routerLink="/clientes" class="volver">← Clientes</a>
+
+  @if (cargando()) {
+    <div class="crud__tabla-wrap"><div class="crud__vacio">Cargando...</div></div>
+  } @else if (errorCarga()) {
+    <div class="crud__tabla-wrap"><div class="crud__vacio texto-error">{{ errorCarga() }}</div></div>
+  }
+
+  @if (!cargando() && !errorCarga() && cliente(); as c) {
+    <div class="crud__header">
+      <div>
+        <h2 class="crud__title">
+          {{ c.nombre }}
+          <span class="badge" [class.badge--activo]="c.estatus === 'activo'" [class.badge--inactivo]="c.estatus !== 'activo'">{{ etiqueta(c.estatus) }}</span>
+        </h2>
+        <p class="crud__subtitle">
+          <code>{{ c.slug }}</code> · RFC {{ c.rfc || '—' }} · Alta {{ c.creado || '—' }}
+        </p>
+        @if (c.notas) { <p class="notas">{{ c.notas }}</p> }
+      </div>
+      <div class="crud__actions">
+        <button class="btn btn--secondary" type="button" (click)="editarCliente()">Editar datos</button>
+        @if (productosDisponibles().length > 0) {
+          <button class="btn btn--primary" type="button" (click)="agregarApp()">+ Contratar app</button>
+        }
+      </div>
+    </div>
+
+    @if (c.suscripciones.length === 0) {
+      <div class="crud__tabla-wrap"><div class="crud__vacio">Este cliente aún no tiene apps contratadas.</div></div>
+    }
+
+    <div class="apps">
+      @for (s of c.suscripciones; track s.id) {
+        <section class="app" [class.app--ocupada]="ocupado() === s.id" [attr.aria-busy]="ocupado() === s.id">
+          <header class="app__header">
+            <div>
+              <h3>{{ s.producto_nombre }}</h3>
+              <span class="texto-tenue">{{ s.modo_datos === 'dedicada' ? 'Base dedicada (la crea Kernia)' : 'Base gestionada por la app' }}</span>
+            </div>
+            <span class="badge"
+              [class.badge--activo]="s.estatus === 'activo'"
+              [class.badge--inactivo]="s.estatus === 'suspendido' || s.estatus === 'fallido'"
+              [class.badge--aplicado]="s.estatus === 'en_aprovisionamiento'">{{ etiqueta(s.estatus) }}</span>
+          </header>
+
+          @if (s.aviso_pendiente) {
+            <div class="alerta alerta--advertencia">
+              La app aún no confirma el cambio a <b>{{ etiqueta(s.aviso_pendiente) }}</b> ({{ s.aviso_intentos }} intento(s)).
+              Kernia lo reintenta cada minuto.
+            </div>
+          }
+          @if (s.estatus !== s.estatus_almacenado) {
+            <div class="alerta alerta--advertencia">El cliente está suspendido: la app se ve como suspendida aunque la suscripción esté activa.</div>
+          }
+
+          <dl class="app__datos">
+            <div>
+              <dt>Plan</dt>
+              <dd>
+                @if (producto(s.producto)?.planes?.length) {
+                  <select [value]="s.plan ?? ''" (change)="cambiarPlan(s, $any($event.target).value)"
+                          [disabled]="ocupado() === s.id || s.estatus_almacenado !== 'activo'" aria-label="Plan">
+                    @if (!s.plan) { <option value="" disabled>Sin plan</option> }
+                    @for (p of producto(s.producto)!.planes; track p.codigo) {
+                      <option [value]="p.codigo">{{ p.nombre }}</option>
+                    }
+                  </select>
+                } @else {
+                  {{ s.plan || 'Sin catálogo de planes' }}
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>Administrador</dt>
+              <dd>{{ s.admin_email || '—' }}</dd>
+            </div>
+            <div>
+              <dt>Contratación</dt>
+              <dd>{{ s.fecha_contratacion || '—' }}</dd>
+            </div>
+            <div>
+              <dt>Próximo pago</dt>
+              <dd>{{ s.fecha_proximo_pago || 'Sin definir' }}</dd>
+            </div>
+          </dl>
+
+          @if (s.modulos) {
+            <div class="app__bloque">
+              <h4>Módulos</h4>
+              <div class="chips">
+                @for (m of producto(s.producto)?.modulos ?? []; track m.clave) {
+                  <span class="chip" [class.chip--activo]="s.modulos.includes(m.clave)" [class.chip--apagado]="!s.modulos.includes(m.clave)">
+                    {{ m.nombre }}
+                  </span>
+                }
+              </div>
+            </div>
+          }
+
+          @if (limites(s).length) {
+            <div class="app__bloque">
+              <h4>Límites efectivos</h4>
+              <div class="chips">
+                @for (l of limites(s); track l.clave) {
+                  <span class="chip">{{ etiquetaLimite(l.clave) }}: <b>{{ l.valor ?? 'Sin límite' }}</b></span>
+                }
+              </div>
+            </div>
+          }
+
+          @if (extrasDe(s).length) {
+            <div class="app__bloque">
+              <h4>Extras contratados</h4>
+              @for (e of extrasDe(s); track e.codigo) {
+                <div class="extra">
+                  <span>{{ e.nombre }} <span class="texto-tenue">(+{{ e.incremento }} {{ etiquetaLimite(e.limite).toLowerCase() }} c/u)</span></span>
+                  <span class="extra__total">{{ e.total }}</span>
+                  <button class="btn btn--secondary btn--sm" type="button" (click)="moverExtra(s, e, -1)"
+                          [disabled]="e.total === 0 || ocupado() === s.id" [attr.aria-label]="'Retirar ' + e.nombre">−</button>
+                  <button class="btn btn--secondary btn--sm" type="button" (click)="moverExtra(s, e, 1)"
+                          [disabled]="ocupado() === s.id" [attr.aria-label]="'Agregar ' + e.nombre">+</button>
+                </div>
+              }
+            </div>
+          }
+
+          @if (metricasDe(s.id); as m) {
+            <div class="app__bloque">
+              <h4>Métricas de uso</h4>
+              @if (m === 'cargando') {
+                <span class="texto-tenue">Consultando a la app…</span>
+              } @else if (!m['ok']) {
+                <span class="texto-error">La app no respondió sus métricas.</span>
+              } @else {
+                <div class="chips">
+                  @for (e of entradas(m); track e.clave) {
+                    <span class="chip">{{ e.clave }}: <b>{{ e.valor ?? '—' }}</b></span>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          <footer class="app__acciones">
+            <button class="btn btn--secondary btn--sm" type="button" (click)="verMetricas(s)">
+              {{ metricasDe(s.id) ? 'Ocultar métricas' : 'Ver métricas' }}
+            </button>
+            @if (s.estatus_almacenado === 'activo' || s.estatus_almacenado === 'suspendido') {
+              <button class="btn btn--secondary btn--sm" type="button" (click)="restablecerAdmin(s)"
+                      [disabled]="ocupado() === s.id || s.estatus_almacenado !== 'activo'">Restablecer acceso del administrador</button>
+              <button class="btn btn--sm" type="button" (click)="cambiarEstatus(s)" [disabled]="ocupado() === s.id"
+                      [class.btn--peligro]="s.estatus_almacenado === 'activo'" [class.btn--primary]="s.estatus_almacenado !== 'activo'">
+                {{ s.estatus_almacenado === 'activo' ? 'Suspender' : 'Reactivar' }}
+              </button>
+            }
+            @if (s.estatus_almacenado === 'fallido') {
+              <button class="btn btn--primary btn--sm" type="button" (click)="reintentar(s)" [disabled]="ocupado() === s.id">Reintentar alta</button>
+            }
+          </footer>
+        </section>
+      }
+    </div>
+  }
+</div>
+
+@if (editando()) {
+  <div class="modal-overlay" (click)="editando.set(false)">
+    <div class="modal" role="dialog" aria-labelledby="titulo-editar-cliente" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3 id="titulo-editar-cliente">Editar cliente</h3>
+        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="editando.set(false)">✕</button>
+      </div>
+      @if (error()) { <div class="alerta alerta--error">{{ error() }}</div> }
+      <form [formGroup]="formCliente" (ngSubmit)="guardarCliente()">
+        <div class="form-grid">
+          <div class="campo campo--full">
+            <label for="ed-nombre">Nombre / razón social <span class="req">*</span></label>
+            <input id="ed-nombre" type="text" formControlName="nombre" />
+          </div>
+          <div class="campo">
+            <label>Slug</label>
+            <input type="text" [value]="cliente()?.slug" disabled />
+            <small class="ayuda">El slug no se puede cambiar.</small>
+          </div>
+          <div class="campo">
+            <label for="ed-rfc">RFC contratante</label>
+            <input id="ed-rfc" type="text" formControlName="rfc" />
+          </div>
+          <div class="campo campo--full">
+            <label for="ed-notas">Notas</label>
+            <textarea id="ed-notas" rows="3" formControlName="notas"></textarea>
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--secondary" type="button" (click)="editando.set(false)">Cancelar</button>
+          <button class="btn btn--primary" type="submit" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (agregando()) {
+  <div class="modal-overlay" (click)="!guardando() && agregando.set(false)">
+    <div class="modal" role="dialog" aria-labelledby="titulo-agregar-app" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3 id="titulo-agregar-app">Contratar app para {{ cliente()?.nombre }}</h3>
+        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="agregando.set(false)" [disabled]="guardando()">✕</button>
+      </div>
+      @if (error()) { <div class="alerta alerta--error">{{ error() }}</div> }
+      <form [formGroup]="formApp" (ngSubmit)="guardarApp()">
+        <div class="form-grid">
+          <div class="campo">
+            <label for="app-producto">App <span class="req">*</span></label>
+            <select id="app-producto" formControlName="producto">
+              @for (p of productosDisponibles(); track p.slug) {
+                <option [value]="p.slug">{{ p.nombre }}</option>
+              }
+            </select>
+          </div>
+          @if (planesDelProducto().length) {
+            <div class="campo">
+              <label for="app-plan">Plan <span class="req">*</span></label>
+              <select id="app-plan" formControlName="plan">
+                @for (p of planesDelProducto(); track p.codigo) {
+                  <option [value]="p.codigo">{{ p.nombre }}</option>
+                }
+              </select>
+            </div>
+          }
+          <div class="campo">
+            <label for="app-admin">Nombre del administrador <span class="req">*</span></label>
+            <input id="app-admin" type="text" formControlName="admin_nombre" />
+          </div>
+          <div class="campo">
+            <label for="app-email">Correo del administrador <span class="req">*</span></label>
+            <input id="app-email" type="email" formControlName="admin_email" />
+          </div>
+        </div>
+        <p class="ayuda">
+          Kernia dará de alta al cliente en la app y mostrará <b>una sola vez</b> la contraseña temporal del administrador.
+          @if (producto(formApp.controls.producto.value ?? '')?.modo_datos === 'dedicada') { Se creará además su base de datos dedicada. }
+        </p>
+        <div class="modal__footer">
+          <button class="btn btn--secondary" type="button" (click)="agregando.set(false)" [disabled]="guardando()">Cancelar</button>
+          <button class="btn btn--primary" type="submit" [disabled]="guardando()">{{ guardando() ? 'Contratando… (puede tardar)' : 'Contratar' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

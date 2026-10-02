@@ -1,0 +1,28 @@
+<div class="admin-shell">
+  <header class="admin-shell__topbar">
+    <div class="admin-shell__brand">
+      <svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="#C2661D"/>
+        <path d="M16 6l9 5v10l-9 5-9-5V11l9-5z" stroke="white" stroke-width="1.6" stroke-linejoin="round" opacity="0.9"/>
+        <path d="M16 16l9-5M16 16v10M16 16L7 11" stroke="white" stroke-width="1.6" stroke-linejoin="round" opacity="0.9"/>
+      </svg>
+      <span>Kernia — Panel de operación</span>
+    </div>
+
+    <nav class="admin-shell__nav">
+      <a routerLink="/clientes" routerLinkActive="active">Clientes</a>
+      <a routerLink="/tenants" routerLinkActive="active" title="Modelo anterior, solo consulta">Tenants (heredado)</a>
+    </nav>
+
+    <div class="admin-shell__user">
+      @if (admin(); as u) {
+        <span class="admin-shell__user-name">{{ u.nombre }}</span>
+      }
+      <button type="button" class="admin-shell__logout" (click)="logout()">Salir</button>
+    </div>
+  </header>
+
+  <main class="admin-shell__content">
+    <router-outlet />
+  </main>
+</div>

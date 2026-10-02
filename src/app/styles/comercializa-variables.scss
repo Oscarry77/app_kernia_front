@@ -1,0 +1,118 @@
+// Grafito Cálido — tema oscuro, alineado a la marca Kernia (grafito #15181D +
+// acento naranja quemado) definida en HANDOFF_BRANDING_KERNIA_2026-09-04.
+// El acento aquí se afina un poco más claro que el oficial de marca (#B5581A)
+// porque ese tono se eligió para pasar contraste sobre FONDO CLARO; sobre
+// fondo oscuro conviene un poco más de brillo para legibilidad.
+$bg-app:        #0d0f13;
+$bg-sidebar:    #121418;
+$bg-card:       #1b1f26;
+$bg-card-raised:#20242c;
+$bg-content:    #15181d;
+
+$primary:        #c2661d;
+$primary-hover:  #d97a34;
+$primary-light:  rgba(194, 102, 29, 0.16);
+
+$text-primary:   #edeff3;
+$text-secondary: #a6adbb;
+$text-muted:     #6b7280;
+$text-on-dark:   #edeff3;
+$text-on-primary:#171310;
+
+$success:  #4caf7d;
+$warning:  #e8a33d;
+$danger:   #f0616f;
+$info:     #5b9bd5;
+
+$border-light:  rgba(255, 255, 255, 0.06);
+$border-card:   rgba(255, 255, 255, 0.08);
+
+$font-family:     'Inter', 'Segoe UI', system-ui, sans-serif;
+$font-size-xs:    0.75rem;
+$font-size-sm:    0.875rem;
+$font-size-base:  1rem;
+$font-size-lg:    1.125rem;
+$font-size-xl:    1.25rem;
+$font-size-2xl:   1.5rem;
+$font-size-3xl:   2rem;
+
+$font-weight-regular: 400;
+$font-weight-medium:  500;
+$font-weight-semibold:600;
+$font-weight-bold:    700;
+
+$spacing-xs:  4px;
+$spacing-sm:  8px;
+$spacing-md:  16px;
+$spacing-lg:  24px;
+$spacing-xl:  32px;
+$spacing-2xl: 48px;
+$spacing-3xl: 64px;
+
+$radius-sm:  6px;
+$radius-md:  10px;
+$radius-lg:  16px;
+$radius-xl:  24px;
+$radius-full:9999px;
+
+$shadow-card: 0 4px 20px rgba(0, 0, 0, 0.35);
+$shadow-modal:0 16px 56px rgba(0, 0, 0, 0.55);
+$shadow-btn:  0 2px 10px rgba(194, 102, 29, 0.35);
+
+$sidebar-width:        240px;
+$sidebar-width-mini:   64px;
+$topbar-height:        64px;
+$content-max-width:    1440px;
+
+$transition-fast:   0.15s ease;
+$transition-normal: 0.25s ease;
+$transition-slow:   0.35s ease;
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin card {
+  background: $bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  border: 1px solid $border-card;
+}
+
+@mixin btn-primary {
+  background: $primary;
+  color: $text-on-primary;
+  border: none;
+  border-radius: $radius-md;
+  padding: $spacing-sm $spacing-lg;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition: background $transition-fast, box-shadow $transition-fast;
+  box-shadow: $shadow-btn;
+
+  &:hover:not(:disabled) {
+    background: $primary-hover;
+    box-shadow: 0 4px 18px rgba(194, 102, 29, 0.45);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@mixin grid-overlay($color: rgba(255, 255, 255, 0.035), $size: 40px) {
+  background-image:
+    linear-gradient(to right, $color 1px, transparent 1px),
+    linear-gradient(to bottom, $color 1px, transparent 1px);
+  background-size: $size $size;
+}

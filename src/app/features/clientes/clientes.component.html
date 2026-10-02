@@ -1,0 +1,125 @@
+<div class="crud">
+  <div class="crud__header">
+    <div>
+      <h2 class="crud__title">Clientes</h2>
+      <p class="crud__subtitle">Workspaces que contratan las apps de Kernia — su plan, estatus y acceso.</p>
+    </div>
+    <div class="crud__actions">
+      <input
+        #q
+        type="search"
+        class="buscador"
+        placeholder="Buscar por nombre, slug o RFC"
+        (keyup.enter)="buscar(q.value)"
+        (search)="buscar(q.value)"
+      />
+      <button class="btn btn--primary" type="button" (click)="nuevo()">+ Nuevo cliente</button>
+    </div>
+  </div>
+
+  <div class="crud__tabla-wrap">
+    @if (cargando()) {
+      <div class="crud__vacio">Cargando...</div>
+    } @else if (errorCarga()) {
+      <div class="crud__vacio">
+        <span class="texto-error">{{ errorCarga() }}</span>
+        <button class="btn btn--secondary btn--sm" type="button" (click)="cargar()">Reintentar</button>
+      </div>
+    } @else if (clientes().length === 0) {
+      <div class="crud__vacio">{{ busqueda() ? 'Ningún cliente coincide con la búsqueda.' : 'No hay clientes registrados.' }}</div>
+    } @else {
+      <table class="crud__tabla">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Slug</th>
+            <th>RFC</th>
+            <th>Apps contratadas</th>
+            <th>Estatus</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of clientes(); track c.id) {
+            <tr class="fila-clic" (click)="abrir(c)" tabindex="0" (keyup.enter)="abrir(c)">
+              <td><strong>{{ c.nombre }}</strong></td>
+              <td><code>{{ c.slug }}</code></td>
+              <td>{{ c.rfc || '—' }}</td>
+              <td>
+                @if (c.suscripciones.length === 0) {
+                  <span class="texto-tenue">Sin apps</span>
+                } @else {
+                  <div class="chips">
+                    @for (s of c.suscripciones; track s.id) {
+                      <span
+                        class="chip"
+                        [class.chip--activo]="s.estatus === 'activo'"
+                        [class.chip--suspendido]="s.estatus === 'suspendido' || s.estatus === 'fallido'"
+                        [class.chip--proceso]="s.estatus === 'en_aprovisionamiento'"
+                        [title]="etiqueta(s.estatus) + (s.aviso_pendiente ? ' · aviso pendiente de confirmar' : '')"
+                      >
+                        {{ s.producto_nombre }}@if (s.plan_nombre) { · {{ s.plan_nombre }} }
+                        @if (s.aviso_pendiente) { <span aria-label="aviso pendiente">⚠</span> }
+                      </span>
+                    }
+                  </div>
+                }
+              </td>
+              <td>
+                <span class="badge" [class.badge--activo]="c.estatus === 'activo'" [class.badge--inactivo]="c.estatus !== 'activo'">
+                  {{ etiqueta(c.estatus) }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+@if (mostrarForm()) {
+  <div class="modal-overlay" (click)="cerrarForm()">
+    <div class="modal" role="dialog" aria-labelledby="titulo-nuevo-cliente" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3 id="titulo-nuevo-cliente">Nuevo cliente</h3>
+        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="cerrarForm()">✕</button>
+      </div>
+
+      @if (error()) {
+        <div class="alerta alerta--error">{{ error() }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="guardar()">
+        <div class="form-grid">
+          <div class="campo campo--full">
+            <label for="cli-nombre">Nombre / razón social <span class="req">*</span></label>
+            <input id="cli-nombre" type="text" formControlName="nombre" (input)="sugerirSlug()" />
+          </div>
+          <div class="campo">
+            <label for="cli-slug">Slug <span class="req">*</span></label>
+            <input id="cli-slug" type="text" formControlName="slug" placeholder="ej. empresa02" />
+            <small class="ayuda">Identifica al cliente en la URL de cada app (<code>/{{ '{app}' }}/{{ form.controls.slug.value || 'slug' }}/login</code>). <b>No se puede cambiar después.</b></small>
+            @if (form.controls.slug.touched && form.controls.slug.invalid) {
+              <small class="texto-error">Minúsculas, números y guiones (3 a 63), sin empezar ni terminar en guion.</small>
+            }
+          </div>
+          <div class="campo">
+            <label for="cli-rfc">RFC contratante</label>
+            <input id="cli-rfc" type="text" formControlName="rfc" placeholder="Informativo; no es llave" />
+          </div>
+          <div class="campo campo--full">
+            <label for="cli-notas">Notas</label>
+            <textarea id="cli-notas" rows="3" formControlName="notas"></textarea>
+          </div>
+        </div>
+
+        <div class="modal__footer">
+          <button class="btn btn--secondary" type="button" (click)="cerrarForm()" [disabled]="guardando()">Cancelar</button>
+          <button class="btn btn--primary" type="submit" [disabled]="guardando()">
+            {{ guardando() ? 'Guardando…' : 'Crear cliente' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

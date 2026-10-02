@@ -1,0 +1,222 @@
+@use '../../styles/comercializa-variables' as v;
+
+.crud {
+  display: flex;
+  flex-direction: column;
+  gap: v.$spacing-lg;
+  font-family: v.$font-family;
+}
+
+.crud__header {
+  @include v.flex-between;
+  flex-wrap: wrap;
+  gap: v.$spacing-md;
+}
+
+.crud__title {
+  font-size: v.$font-size-xl;
+  font-weight: v.$font-weight-bold;
+  color: v.$text-primary;
+  margin: 0;
+}
+
+.crud__subtitle {
+  font-size: v.$font-size-sm;
+  color: v.$text-secondary;
+  margin-top: v.$spacing-xs;
+}
+
+.crud__actions {
+  display: flex;
+  gap: v.$spacing-sm;
+  align-items: center;
+}
+
+.btn {
+  border: none;
+  border-radius: v.$radius-md;
+  padding: v.$spacing-sm v.$spacing-lg;
+  font-size: v.$font-size-sm;
+  font-weight: v.$font-weight-semibold;
+  cursor: pointer;
+  transition: background v.$transition-fast, opacity v.$transition-fast;
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.btn--primary { @include v.btn-primary; padding: v.$spacing-sm v.$spacing-lg; }
+
+.btn--secondary {
+  background: v.$bg-card;
+  border: 1px solid v.$border-card;
+  color: v.$text-secondary;
+
+  &:hover:not(:disabled) { background: v.$bg-content; }
+}
+
+.btn--sm { padding: 4px 10px; font-size: v.$font-size-xs; }
+
+.crud__tabla-wrap {
+  @include v.card;
+  overflow-x: auto;
+}
+
+.crud__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: v.$font-size-sm;
+
+  th, td {
+    padding: v.$spacing-sm v.$spacing-md;
+    text-align: left;
+    white-space: nowrap;
+    vertical-align: top;
+  }
+
+  thead th {
+    background: v.$bg-content;
+    color: v.$text-muted;
+    font-weight: v.$font-weight-semibold;
+    font-size: v.$font-size-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid v.$border-card;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid v.$border-card;
+    cursor: pointer;
+    transition: background v.$transition-fast;
+
+    &:hover { background: v.$bg-content; }
+    &:last-child { border-bottom: none; }
+  }
+
+  td { color: v.$text-primary; }
+}
+
+.crud__vacio {
+  padding: v.$spacing-2xl;
+  text-align: center;
+  color: v.$text-muted;
+  font-size: v.$font-size-sm;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: v.$radius-full;
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-semibold;
+
+  &--activo   { background: rgba(76, 175, 125, 0.18); color: #7fdba8; }
+  &--inactivo { background: rgba(240, 97, 111, 0.16); color: #f5a1ab; }
+  &--aplicado { background: rgba(232, 163, 61, 0.18); color: #f0be74; }
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: v.$spacing-2xl v.$spacing-md;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.modal {
+  @include v.card;
+  box-shadow: v.$shadow-modal;
+  width: 100%;
+  max-width: 720px;
+  padding: v.$spacing-xl;
+}
+
+.modal__header {
+  @include v.flex-between;
+  margin-bottom: v.$spacing-lg;
+
+  h3 {
+    font-size: v.$font-size-lg;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-primary;
+    margin: 0;
+  }
+}
+
+.modal__cerrar {
+  background: none;
+  border: none;
+  font-size: v.$font-size-lg;
+  color: v.$text-muted;
+  cursor: pointer;
+  line-height: 1;
+
+  &:hover { color: v.$text-primary; }
+}
+
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: v.$spacing-sm;
+  margin-top: v.$spacing-lg;
+  padding-top: v.$spacing-md;
+  border-top: 1px solid v.$border-card;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: v.$spacing-md;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &--full { grid-column: 1 / -1; }
+
+  label {
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-medium;
+    color: v.$text-secondary;
+  }
+
+  .req { color: v.$danger; }
+}
+
+input, select, textarea {
+  border: 1px solid v.$border-card;
+  border-radius: v.$radius-sm;
+  padding: v.$spacing-sm;
+  font-size: v.$font-size-sm;
+  font-family: v.$font-family;
+  color: v.$text-primary;
+  background: v.$bg-app;
+
+  &:focus {
+    outline: none;
+    border-color: v.$primary;
+    box-shadow: 0 0 0 3px v.$primary-light;
+  }
+
+  &:disabled { background: v.$bg-content; color: v.$text-muted; }
+
+  &.ng-invalid.ng-touched {
+    border-color: v.$danger;
+  }
+}
+
+.alerta {
+  padding: v.$spacing-sm v.$spacing-md;
+  border-radius: v.$radius-sm;
+  font-size: v.$font-size-sm;
+
+  &--error { background: rgba(240, 97, 111, 0.12); color: v.$danger; }
+  &--info  { background: v.$primary-light; color: v.$primary; }
+}

@@ -1,0 +1,129 @@
+@use '../../styles/comercializa-variables' as v;
+
+.volver {
+  color: v.$text-secondary;
+  font-size: v.$font-size-sm;
+  text-decoration: none;
+  width: fit-content;
+
+  &:hover { color: v.$text-primary; }
+}
+
+.crud__title {
+  display: flex;
+  align-items: center;
+  gap: v.$spacing-sm;
+}
+
+.notas {
+  margin-top: v.$spacing-xs;
+  color: v.$text-secondary;
+  font-size: v.$font-size-sm;
+  white-space: pre-line;
+}
+
+.apps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: v.$spacing-md;
+
+  @media (max-width: 520px) { grid-template-columns: 1fr; }
+}
+
+.app {
+  @include v.card;
+  padding: v.$spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: v.$spacing-md;
+  transition: opacity v.$transition-fast;
+
+  &--ocupada { opacity: 0.6; pointer-events: none; }
+}
+
+.app__header {
+  @include v.flex-between;
+  align-items: flex-start;
+
+  h3 {
+    margin: 0;
+    font-size: v.$font-size-lg;
+    color: v.$text-primary;
+  }
+}
+
+.app__datos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: v.$spacing-sm v.$spacing-md;
+  margin: 0;
+
+  dt {
+    font-size: v.$font-size-xs;
+    color: v.$text-muted;
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-size: v.$font-size-sm;
+    color: v.$text-primary;
+    overflow-wrap: anywhere;
+  }
+
+  select { width: 100%; }
+}
+
+.app__bloque h4 {
+  margin: 0 0 v.$spacing-xs;
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-semibold;
+  color: v.$text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.chip--apagado {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.extra {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: v.$spacing-sm;
+  font-size: v.$font-size-sm;
+  color: v.$text-secondary;
+
+  &__total {
+    min-width: 2ch;
+    text-align: right;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-primary;
+  }
+}
+
+.app__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$spacing-xs;
+  padding-top: v.$spacing-sm;
+  border-top: 1px solid v.$border-card;
+}
+
+.btn--peligro {
+  background: rgba(240, 97, 111, 0.14);
+  border: 1px solid rgba(240, 97, 111, 0.45);
+  color: #f5a1ab;
+
+  &:hover:not(:disabled) { background: rgba(240, 97, 111, 0.24); }
+}
+
+.alerta--advertencia {
+  background: rgba(232, 163, 61, 0.12);
+  border: 1px solid rgba(232, 163, 61, 0.35);
+  color: #f0be74;
+  border-radius: v.$radius-sm;
+  padding: v.$spacing-sm v.$spacing-md;
+  font-size: v.$font-size-sm;
+}

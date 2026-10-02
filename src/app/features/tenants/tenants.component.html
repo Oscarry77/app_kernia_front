@@ -1,0 +1,183 @@
+<div class="crud">
+  <div class="crud__header">
+    <div>
+      <h2 class="crud__title">Tenants (heredado)</h2>
+      <p class="crud__subtitle">Modelo anterior de Kernia — <b>solo consulta</b>.</p>
+    </div>
+  </div>
+
+  <!-- (02-oct-2026) Pantalla heredada: alta, edición y suspensión se retiraron
+       porque escribían en `tenants`, que ninguna app consulta ya. -->
+  <div class="alerta alerta--error" role="note">
+    Esta pantalla muestra el modelo anterior y no controla el acceso de las apps.
+    Para operar clientes, planes, suspensiones y accesos usa <a routerLink="/clientes">Clientes</a>.
+  </div>
+
+  <div class="crud__tabla-wrap">
+    @if (cargando()) {
+      <div class="crud__vacio">Cargando...</div>
+    } @else if (tenants().length === 0) {
+      <div class="crud__vacio">No hay tenants registrados.</div>
+    } @else {
+      <table class="crud__tabla">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Slug</th>
+            <th>Motor</th>
+            <th>Estatus</th>
+            <th>Plan</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of tenants(); track t.id) {
+            <tr>
+              <td>{{ t.nombre_cliente }}</td>
+              <td>{{ t.slug }}</td>
+              <td>{{ t.db_driver }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge--activo]="t.estatus === 'activo'"
+                  [class.badge--inactivo]="t.estatus === 'suspendido'"
+                  [class.badge--aplicado]="t.estatus === 'en_aprovisionamiento'"
+                >{{ t.estatus }}</span>
+              </td>
+              <td>{{ t.plan || '—' }}</td>
+              <td>
+                <button class="btn btn--secondary btn--sm" type="button" (click)="verMetricas(t, $event)">
+                  {{ metricasDe(t) ? 'Ocultar métricas' : 'Ver métricas' }}
+                </button>
+              </td>
+            </tr>
+            @if (metricasDe(t); as m) {
+              <tr>
+                <td colspan="6" style="background: #20242c;">
+                  @if (m === 'cargando') {
+                    Cargando métricas...
+                  } @else if (!m.ok) {
+                    <span style="color: #f0616f;">{{ m.error }}</span>
+                  } @else {
+                    <div style="display: flex; gap: 24px; flex-wrap: wrap; font-size: 13px;">
+                      <span><strong>{{ m.usuarios_total }}</strong> usuarios ({{ m.usuarios_activos }} activos)</span>
+                      <span><strong>{{ m.clientes_total }}</strong> clientes</span>
+                      <span><strong>{{ m.productos_total }}</strong> productos</span>
+                      <span><strong>{{ m.documentos_total }}</strong> documentos ({{ m.documentos_ultimos_30_dias }} últimos 30 días)</span>
+                      <span>Último acceso: {{ m.ultimo_acceso || '—' }}</span>
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+@if (mostrarForm()) {
+  <div class="modal-overlay" (click)="cerrarForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3>{{ editandoId() ? 'Editar tenant' : 'Nuevo tenant' }}</h3>
+        <button class="modal__cerrar" type="button" (click)="cerrarForm()">✕</button>
+      </div>
+
+      @if (error()) {
+        <div class="alerta alerta--error">{{ error() }}</div>
+      }
+
+      @if (editandoId() === null) {
+        <form [formGroup]="form" (ngSubmit)="guardar()">
+          <div class="form-grid">
+            <div class="campo">
+              <label>Slug <span class="req">*</span></label>
+              <input type="text" formControlName="slug" placeholder="ej. acme" />
+            </div>
+            <div class="campo campo--full">
+              <label>Nombre / razón social <span class="req">*</span></label>
+              <input type="text" formControlName="nombre" />
+            </div>
+            <div class="campo">
+              <label>Motor <span class="req">*</span></label>
+              <select formControlName="driver">
+                <option value="mysql">MySQL</option>
+                <option value="sqlsrv">SQL Server</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label>Puerto <span class="req">*</span></label>
+              <input type="number" formControlName="puerto" />
+            </div>
+            <div class="campo campo--full">
+              <label>Host de la base <span class="req">*</span></label>
+              <input type="text" formControlName="db_host" placeholder="ej. 127.0.0.1 o servidor\INSTANCIA" />
+            </div>
+            <div class="campo campo--full">
+              <label>Nombre de la base <span class="req">*</span></label>
+              <input type="text" formControlName="db_database" />
+            </div>
+
+            <div class="campo campo--full">
+              <label>
+                <input type="checkbox" formControlName="auto_provisionar" />
+                Aprovisionar automáticamente (crea la base y un usuario de app acotado)
+              </label>
+            </div>
+
+            @if (form.get('auto_provisionar')?.value) {
+              <div class="campo campo--full">
+                <label>
+                  <input type="checkbox" formControlName="con_bi" />
+                  Crear también usuario de solo lectura para BI
+                </label>
+              </div>
+            } @else {
+              <div class="campo">
+                <label>Usuario de la base <span class="req">*</span></label>
+                <input type="text" formControlName="db_username" />
+              </div>
+              <div class="campo">
+                <label>Password de la base <span class="req">*</span></label>
+                <input type="password" formControlName="db_password" />
+              </div>
+            }
+          </div>
+
+          <div class="modal__footer">
+            <button class="btn btn--secondary" type="button" (click)="cerrarForm()">Cancelar</button>
+            <button class="btn btn--primary" type="submit" [disabled]="guardando()">
+              {{ guardando() ? 'Creando...' : 'Crear tenant' }}
+            </button>
+          </div>
+        </form>
+      } @else {
+        <form [formGroup]="formEdicion" (ngSubmit)="guardar()">
+          <div class="form-grid">
+            <div class="campo campo--full">
+              <label>Nombre / razón social <span class="req">*</span></label>
+              <input type="text" formControlName="nombre_cliente" />
+            </div>
+            <div class="campo">
+              <label>Plan</label>
+              <input type="text" formControlName="plan" />
+            </div>
+            <div class="campo campo--full">
+              <label>Notas</label>
+              <textarea formControlName="notas" rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="modal__footer">
+            <button class="btn btn--secondary" type="button" (click)="cerrarForm()">Cancelar</button>
+            <button class="btn btn--primary" type="submit" [disabled]="guardando()">
+              {{ guardando() ? 'Guardando...' : 'Guardar' }}
+            </button>
+          </div>
+        </form>
+      }
+    </div>
+  </div>
+}
