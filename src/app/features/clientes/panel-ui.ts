@@ -64,3 +64,12 @@ export function etiquetaLimite(clave: string): string {
     max_usuarios: 'Usuarios',
   } as Record<string, string>)[clave] ?? clave;
 }
+
+/** (02-oct-2026) Fase 2: texto de los días restantes de una vigencia. */
+export function etiquetaDias(dias: number | null): string {
+  if (dias === null) return 'Sin definir';
+  if (dias < 0) return `Vencida hace ${-dias} día${dias === -1 ? '' : 's'}`;
+  if (dias === 0) return 'Vence hoy';
+  if (dias === 1) return 'Vence mañana';
+  return `${dias} días`;
+}

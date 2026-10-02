@@ -1,0 +1,59 @@
+<div class="crud">
+  <div class="crud__header">
+    <div>
+      <h2 class="crud__title">Vigencias</h2>
+      <p class="crud__subtitle">
+        Vencimientos de todas las apps contratadas. Hoy: <b>{{ hoy() | date: 'dd/MM/yyyy' }}</b> (hora de México).
+        La suspensión automática corre a las 00:00 del día de vencimiento.
+      </p>
+    </div>
+  </div>
+
+  <div class="filtros" role="tablist" aria-label="Filtro de vigencias">
+    @for (f of filtros; track f.clave) {
+      <button type="button" role="tab" class="filtro" [class.activo]="filtro() === f.clave"
+              [attr.aria-selected]="filtro() === f.clave" (click)="elegir(f.clave)">{{ f.nombre }}</button>
+    }
+  </div>
+
+  <div class="crud__tabla-wrap">
+    @if (cargando()) {
+      <div class="crud__vacio">Cargando...</div>
+    } @else if (error()) {
+      <div class="crud__vacio texto-error">{{ error() }}</div>
+    } @else if (filas().length === 0) {
+      <div class="crud__vacio">Nada en este filtro.</div>
+    } @else {
+      <table class="crud__tabla">
+        <thead>
+          <tr>
+            <th>Cliente</th><th>App</th><th>Plan</th><th>Modalidad</th><th>Próximo pago</th><th>Días</th><th>Estatus</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of filas(); track f.id) {
+            <tr class="fila-clic" (click)="abrir(f)" tabindex="0" (keyup.enter)="abrir(f)">
+              <td><strong>{{ f.cliente }}</strong><div class="texto-tenue"><code>{{ f.cliente_slug }}</code></div></td>
+              <td>{{ f.producto_nombre }}</td>
+              <td>{{ f.plan_nombre || '—' }}</td>
+              <td>{{ f.modalidad_pago ? (f.modalidad_pago | titlecase) : '—' }}</td>
+              <td>
+                {{ f.fecha_proximo_pago ? (f.fecha_proximo_pago | date: 'dd/MM/yyyy') : 'Sin definir' }}
+                @if (f.en_prorroga) { <div class="texto-tenue">Prórroga hasta {{ f.activa_hasta | date: 'dd/MM/yyyy' }}</div> }
+                @if (!f.suspension_automatica && f.fecha_proximo_pago) { <div class="texto-tenue">Sin suspensión automática</div> }
+              </td>
+              <td><span class="dias" [class]="'dias ' + claseDias(f)">{{ etiquetaDias(f.dias_restantes) }}</span></td>
+              <td>
+                <span class="badge" [class.badge--activo]="f.estatus === 'activo'" [class.badge--inactivo]="f.estatus === 'suspendido'"
+                      [class.badge--aplicado]="f.estatus === 'en_aprovisionamiento'">{{ etiqueta(f.estatus) }}</span>
+                @if (f.suspension_motivo) {
+                  <div class="texto-tenue">{{ f.suspension_motivo === 'vencimiento' ? 'Por vencimiento' : 'Manual' }}</div>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>

@@ -1,15 +1,33 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import type { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { ClientesService } from '../../core/services/clientes.service';
-import type { Cliente, ProductoCatalogo, SuscripcionDetalle } from '../../core/models/panel.model';
+import type { Cliente, Pago, ProductoCatalogo, SuscripcionDetalle } from '../../core/models/panel.model';
 import { ClienteFormComponent } from './cliente-form.component';
-import { COLOR_PRIMARIO, etiquetaEstatus, etiquetaLimite, mensajeError, mostrarPasswordUnaVez } from './panel-ui';
+import { COLOR_PRIMARIO, etiquetaDias, etiquetaEstatus, etiquetaLimite, mensajeError, mostrarPasswordUnaVez } from './panel-ui';
+
+interface EdicionVigencia {
+  s: SuscripcionDetalle;
+  modalidad_pago: string;
+  fecha_contratacion: string;
+  fecha_proximo_pago: string;
+  dias_gracia: number;
+  suspension_automatica: boolean;
+}
+
+interface CapturaPago {
+  s: SuscripcionDetalle;
+  referencia: string;
+  fecha_pago: string;
+  monto: number | null;
+  moneda: string;
+  notas: string;
+}
 
 /**
  * (02-oct-2026) Detalle de un cliente: datos generales y, por cada app
@@ -20,7 +38,7 @@ import { COLOR_PRIMARIO, etiquetaEstatus, etiquetaLimite, mensajeError, mostrarP
 @Component({
   selector: 'app-cliente-detalle',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, ClienteFormComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, ClienteFormComponent],
   templateUrl: './cliente-detalle.component.html',
   styleUrls: ['../shared/crud-page.scss', './clientes.component.scss', './cliente-detalle.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,6 +62,14 @@ export class ClienteDetalleComponent implements OnInit {
 
   readonly etiqueta = etiquetaEstatus;
   readonly etiquetaLimite = etiquetaLimite;
+  readonly etiquetaDias = etiquetaDias;
+  readonly modalidades = ['mensual', 'trimestral', 'semestral', 'anual'];
+  readonly hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+
+  // Fase 2 (02-oct-2026): vigencia y pagos.
+  vigenciaEdit = signal<EdicionVigencia | null>(null);
+  pagoEdit = signal<CapturaPago | null>(null);
+  pagos = signal<Record<number, Pago[] | 'cargando'>>({});
 
   formApp = this.fb.group({
     producto: ['', Validators.required],
@@ -293,6 +319,123 @@ export class ClienteDetalleComponent implements OnInit {
     });
     if (!ok.isConfirmed) { this.cargar(); return; }
     this.ejecutar(s.id, this.service.wsCntpaq(s.id, habilitar), habilitar ? 'WS-CNTPAQi.Net habilitado' : 'WS-CNTPAQi.Net deshabilitado');
+  }
+
+  // ── Vigencia y pagos (fase 2) ─────────────────────────────────────────
+
+  claseDias(s: SuscripcionDetalle): string {
+    if (s.dias_restantes === null) return 'dias--sin';
+    if (s.activa_hasta || s.dias_restantes < 0) return 'dias--critico';
+    if (s.aviso?.nivel === 'advertencia' || s.dias_restantes === 0) return 'dias--advertencia';
+    if (s.aviso?.nivel === 'info') return 'dias--info';
+    return 'dias--ok';
+  }
+
+  editarVigencia(s: SuscripcionDetalle): void {
+    this.error.set(null);
+    this.vigenciaEdit.set({
+      s,
+      modalidad_pago: s.modalidad_pago ?? 'anual',
+      fecha_contratacion: s.fecha_contratacion ?? this.hoy,
+      fecha_proximo_pago: s.fecha_proximo_pago ?? '',
+      dias_gracia: s.dias_gracia ?? 0,
+      suspension_automatica: s.suspension_automatica ?? true,
+    });
+  }
+
+  async guardarVigencia(): Promise<void> {
+    const e = this.vigenciaEdit();
+    if (!e || this.guardando()) return;
+    if (!e.fecha_proximo_pago) { this.error.set('Indica la fecha de próximo pago.'); return; }
+
+    if (e.suspension_automatica && e.fecha_proximo_pago <= this.hoy && e.s.estatus_almacenado === 'activo') {
+      const ok = await Swal.fire({
+        icon: 'warning', title: 'Esa fecha ya llegó',
+        text: 'Con la suspensión automática encendida, la app se suspenderá en el siguiente corte (a más tardar en una hora). ¿Continuar?',
+        showCancelButton: true, confirmButtonText: 'Sí, guardar', cancelButtonText: 'Revisar', confirmButtonColor: COLOR_PRIMARIO, reverseButtons: true,
+      });
+      if (!ok.isConfirmed) return;
+    }
+
+    this.guardando.set(true);
+    this.error.set(null);
+    this.service.actualizarVigencia(e.s.id, {
+      modalidad_pago: e.modalidad_pago, fecha_contratacion: e.fecha_contratacion || null,
+      fecha_proximo_pago: e.fecha_proximo_pago, dias_gracia: Number(e.dias_gracia) || 0, suspension_automatica: e.suspension_automatica,
+    }).subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.vigenciaEdit.set(null);
+        this.cargar();
+        Swal.fire({ icon: 'success', title: 'Vigencia guardada', timer: 1500, showConfirmButton: false });
+      },
+      error: (err: HttpErrorResponse) => { this.guardando.set(false); this.error.set(mensajeError(err, 'No se pudo guardar la vigencia.')); },
+    });
+  }
+
+  registrarPago(s: SuscripcionDetalle): void {
+    this.error.set(null);
+    this.pagoEdit.set({ s, referencia: '', fecha_pago: this.hoy, monto: null, moneda: 'MXN', notas: '' });
+  }
+
+  /** Periodo que cubrirá el pago (misma regla que Kernia: sin desbordar fin de mes). */
+  periodoPago(e: CapturaPago): string {
+    const meses = ({ mensual: 1, trimestral: 3, semestral: 6, anual: 12 } as Record<string, number>)[e.s.modalidad_pago ?? ''] ?? 0;
+    if (!e.s.fecha_proximo_pago || !meses) return '—';
+    const [y, m, d] = e.s.fecha_proximo_pago.split('-').map(Number);
+    const mesFin = m - 1 + meses;
+    const ultimoDia = new Date(Date.UTC(y, mesFin + 1, 0)).getUTCDate();
+    const fin = new Date(Date.UTC(y, mesFin, Math.min(d, ultimoDia)));
+    const f = (x: Date) => x.toISOString().slice(0, 10).split('-').reverse().join('/');
+    return `${f(new Date(Date.UTC(y, m - 1, d)))} al ${f(fin)}`;
+  }
+
+  guardarPago(): void {
+    const e = this.pagoEdit();
+    if (!e || this.guardando()) return;
+    if (!e.referencia.trim()) { this.error.set('La referencia del pago es obligatoria.'); return; }
+
+    this.guardando.set(true);
+    this.error.set(null);
+    this.service.registrarPago(e.s.id, {
+      referencia: e.referencia.trim(), fecha_pago: e.fecha_pago || null, monto: e.monto, moneda: e.moneda, notas: e.notas || null,
+    }).subscribe({
+      next: async r => {
+        this.guardando.set(false);
+        this.pagoEdit.set(null);
+        this.cargar();
+        const ps = { ...this.pagos() };
+        delete ps[e.s.id];
+        this.pagos.set(ps);
+        const reactivacion = r.reactivada
+          ? (r.app_confirmo ? ' La app fue reactivada.' : ' Reactivada en Kernia; Kernia reintentará el aviso a la app.')
+          : '';
+        await Swal.fire({
+          icon: 'success', title: 'Pago registrado',
+          text: `Próximo pago: ${r.data.fecha_proximo_pago?.split('-').reverse().join('/')}.${reactivacion}`,
+          confirmButtonColor: COLOR_PRIMARIO,
+        });
+      },
+      error: (err: HttpErrorResponse) => { this.guardando.set(false); this.error.set(mensajeError(err, 'No se pudo registrar el pago.')); },
+    });
+  }
+
+  verPagos(s: SuscripcionDetalle): void {
+    const actuales = { ...this.pagos() };
+    if (actuales[s.id]) {
+      delete actuales[s.id];
+      this.pagos.set(actuales);
+      return;
+    }
+    this.pagos.set({ ...actuales, [s.id]: 'cargando' });
+    this.service.pagos(s.id).subscribe({
+      next: r => this.pagos.set({ ...this.pagos(), [s.id]: r.data }),
+      error: () => this.pagos.set({ ...this.pagos(), [s.id]: [] }),
+    });
+  }
+
+  pagosDe(id: number): Pago[] | 'cargando' | undefined {
+    return this.pagos()[id];
   }
 
   verMetricas(s: SuscripcionDetalle): void {

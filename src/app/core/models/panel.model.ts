@@ -49,9 +49,56 @@ export interface SuscripcionResumen {
   plan: string | null;
   plan_nombre: string | null;
   aviso_pendiente: string | null;
+  fecha_proximo_pago: string | null;
+  dias_restantes: number | null;
 }
 
-export interface SuscripcionDetalle extends SuscripcionResumen {
+/** (02-oct-2026) Fase 2: vigencia de una suscripción. */
+export interface AvisoVigencia {
+  nivel: 'info' | 'advertencia' | 'critico';
+  dias_restantes: number;
+  fecha_proximo_pago: string;
+  mensaje: string;
+}
+
+export interface Vigencia {
+  modalidad_pago: string | null;
+  fecha_contratacion: string | null;
+  fecha_proximo_pago: string | null;
+  dias_restantes: number | null;
+  dias_gracia: number;
+  suspension_automatica: boolean;
+  suspension_motivo: 'vencimiento' | 'manual' | null;
+  activa_hasta: string | null;
+  aviso: AvisoVigencia | null;
+}
+
+export interface FilaVigencia extends Vigencia {
+  id: number;
+  cliente_id: number;
+  cliente: string;
+  cliente_slug: string;
+  producto: string;
+  producto_nombre: string;
+  plan_nombre: string | null;
+  estatus: EstatusSuscripcion;
+  en_prorroga: boolean;
+}
+
+export interface Pago {
+  id: number;
+  fecha_pago: string;
+  periodo_desde: string;
+  periodo_hasta: string;
+  modalidad: string;
+  monto: string | null;
+  moneda: string;
+  referencia: string;
+  notas: string | null;
+  registrado_por: string | null;
+}
+
+export interface SuscripcionDetalle extends SuscripcionResumen, Vigencia {
   estatus_almacenado: EstatusSuscripcion;
   modo_datos: string;
   db_driver: string | null;
@@ -62,8 +109,6 @@ export interface SuscripcionDetalle extends SuscripcionResumen {
   modulos: string[] | null;
   limites: Record<string, number | null> | null;
   extras: Record<string, number>;
-  fecha_contratacion: string | null;
-  fecha_proximo_pago: string | null;
   provisionada_en: string | null;
   aviso_intentos: number;
   aviso_error: string | null;

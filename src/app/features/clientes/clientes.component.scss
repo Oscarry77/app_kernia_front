@@ -52,3 +52,19 @@ code {
   font-size: v.$font-size-xs;
   color: v.$warning;
 }
+
+// (02-oct-2026) Fase 2: indicador de días restantes.
+.dias {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: v.$radius-full;
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-semibold;
+  white-space: nowrap;
+
+  &--ok          { background: rgba(76, 175, 125, 0.16); color: #7fdba8; }
+  &--info        { background: rgba(91, 155, 213, 0.18); color: #9cc4ea; }
+  &--advertencia { background: rgba(232, 163, 61, 0.18); color: #f0be74; }
+  &--critico     { background: rgba(240, 97, 111, 0.18); color: #f5a1ab; }
+  &--sin         { background: v.$bg-content; color: v.$text-muted; }
+}

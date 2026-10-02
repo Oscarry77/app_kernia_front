@@ -7,6 +7,8 @@ import type {
   CatalogoFiscal,
   Cliente,
   DatosFiscales,
+  FilaVigencia,
+  Pago,
   ConPasswordTemporal,
   ProductoCatalogo,
   SuscripcionDetalle,
@@ -69,6 +71,25 @@ export class ClientesService {
 
   wsCntpaq(id: number, habilitado: boolean): Observable<{ data: SuscripcionDetalle }> {
     return this.http.patch<{ data: SuscripcionDetalle }>(`${this.api}/suscripciones/${id}/ws-cntpaq`, { habilitado });
+  }
+
+  // ── Vigencias (fase 2) ──
+  vigencias(filtro: string, dias = 30): Observable<{ data: FilaVigencia[]; hoy: string; modalidades: string[] }> {
+    return this.http.get<{ data: FilaVigencia[]; hoy: string; modalidades: string[] }>(`${this.api}/vigencias`, {
+      params: new HttpParams().set('filtro', filtro).set('dias', dias),
+    });
+  }
+
+  actualizarVigencia(id: number, datos: { modalidad_pago: string; fecha_contratacion?: string | null; fecha_proximo_pago: string; dias_gracia: number; suspension_automatica: boolean }): Observable<{ data: SuscripcionDetalle }> {
+    return this.http.put<{ data: SuscripcionDetalle }>(`${this.api}/suscripciones/${id}/vigencia`, datos);
+  }
+
+  pagos(id: number): Observable<{ data: Pago[] }> {
+    return this.http.get<{ data: Pago[] }>(`${this.api}/suscripciones/${id}/pagos`);
+  }
+
+  registrarPago(id: number, datos: { referencia: string; fecha_pago?: string | null; monto?: number | null; moneda?: string; notas?: string | null }): Observable<{ data: SuscripcionDetalle; reactivada: boolean; app_confirmo: boolean | null }> {
+    return this.http.post<{ data: SuscripcionDetalle; reactivada: boolean; app_confirmo: boolean | null }>(`${this.api}/suscripciones/${id}/pagos`, datos);
   }
 
   metricas(id: number): Observable<{ data: Record<string, unknown> }> {

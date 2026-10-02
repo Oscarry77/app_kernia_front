@@ -1,0 +1,21 @@
+@use '../../styles/comercializa-variables' as v;
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$spacing-xs;
+}
+
+.filtro {
+  border: 1px solid v.$border-card;
+  background: v.$bg-card;
+  color: v.$text-secondary;
+  border-radius: v.$radius-full;
+  padding: 6px 14px;
+  font-size: v.$font-size-sm;
+  cursor: pointer;
+
+  &:hover { color: v.$text-primary; }
+  &.activo { border-color: v.$primary; background: v.$primary-light; color: v.$text-primary; }
+  &:focus-visible { outline: 2px solid v.$primary; outline-offset: 2px; }
+}

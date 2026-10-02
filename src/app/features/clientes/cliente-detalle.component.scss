@@ -154,3 +154,31 @@
 
   input { margin: 0; }
 }
+
+// (02-oct-2026) Fase 2: vigencia en la tarjeta de la app.
+.vigencia {
+  border: 1px solid v.$border-card;
+  border-radius: v.$radius-md;
+  padding: v.$spacing-sm v.$spacing-md;
+
+  &__titulo { @include v.flex-between; margin-bottom: v.$spacing-xs; h4 { margin: 0; } }
+  p { margin: v.$spacing-xs 0 0; font-size: v.$font-size-sm; }
+}
+
+.app__acciones-linea {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$spacing-xs;
+  margin-top: v.$spacing-sm;
+}
+
+.aviso-app {
+  padding: 4px 8px;
+  border-radius: v.$radius-sm;
+
+  &--info        { background: rgba(91, 155, 213, 0.14); color: #9cc4ea; }
+  &--advertencia { background: rgba(232, 163, 61, 0.14); color: #f0be74; }
+  &--critico     { background: rgba(240, 97, 111, 0.14); color: #f5a1ab; }
+}
+
+.pagos { margin-top: v.$spacing-sm; font-size: v.$font-size-xs; }

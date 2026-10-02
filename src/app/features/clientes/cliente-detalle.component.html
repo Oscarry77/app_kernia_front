@@ -134,15 +134,61 @@
                 </dd>
               </div>
             }
-            <div>
-              <dt>Contratación</dt>
-              <dd>{{ s.fecha_contratacion || '—' }}</dd>
-            </div>
-            <div>
-              <dt>Próximo pago</dt>
-              <dd>{{ s.fecha_proximo_pago || 'Sin definir' }}</dd>
-            </div>
+
           </dl>
+
+          <div class="app__bloque vigencia">
+            <div class="vigencia__titulo">
+              <h4>Vigencia</h4>
+              <span [class]="'dias ' + claseDias(s)">{{ etiquetaDias(s.dias_restantes) }}</span>
+            </div>
+            @if (s.fecha_proximo_pago) {
+              <dl class="app__datos">
+                <div><dt>Modalidad</dt><dd>{{ s.modalidad_pago | titlecase }}</dd></div>
+                <div><dt>Próximo pago</dt><dd>{{ s.fecha_proximo_pago | date: 'dd/MM/yyyy' }}</dd></div>
+                <div><dt>Contratación</dt><dd>{{ s.fecha_contratacion ? (s.fecha_contratacion | date: 'dd/MM/yyyy') : '—' }}</dd></div>
+                <div><dt>Suspensión automática</dt><dd>{{ s.suspension_automatica ? 'Sí' : 'No' }}{{ s.dias_gracia ? ' · ' + s.dias_gracia + ' día(s) de gracia' : '' }}</dd></div>
+              </dl>
+              @if (s.activa_hasta) { <p class="texto-tenue">Prórroga activa hasta {{ s.activa_hasta | date: 'dd/MM/yyyy' }}.</p> }
+              @if (s.suspension_motivo === 'vencimiento') { <p class="texto-error">Suspendida por vencimiento: al registrar el pago se reactiva.</p> }
+              @if (s.aviso) {
+                <p [class]="'aviso-app aviso-app--' + s.aviso.nivel">La app muestra: «{{ s.aviso.mensaje }}»</p>
+              }
+            } @else {
+              <p class="texto-tenue">Sin vigencia definida: no se avisa ni se suspende automáticamente.</p>
+            }
+            <div class="app__acciones-linea">
+              <button class="btn btn--secondary btn--sm" type="button" (click)="editarVigencia(s)" [disabled]="ocupado() === s.id">
+                {{ s.fecha_proximo_pago ? 'Editar vigencia' : 'Definir vigencia' }}
+              </button>
+              @if (s.fecha_proximo_pago) {
+                <button class="btn btn--primary btn--sm" type="button" (click)="registrarPago(s)" [disabled]="ocupado() === s.id">Registrar pago</button>
+                <button class="btn btn--secondary btn--sm" type="button" (click)="verPagos(s)">{{ pagosDe(s.id) ? 'Ocultar pagos' : 'Ver pagos' }}</button>
+              }
+            </div>
+            @if (pagosDe(s.id); as ps) {
+              @if (ps === 'cargando') {
+                <span class="texto-tenue">Cargando pagos…</span>
+              } @else if (ps.length === 0) {
+                <span class="texto-tenue">Sin pagos registrados.</span>
+              } @else {
+                <table class="crud__tabla pagos">
+                  <thead><tr><th>Fecha</th><th>Periodo</th><th>Monto</th><th>Referencia</th><th>Registró</th></tr></thead>
+                  <tbody>
+                    @for (p of ps; track p.id) {
+                      <tr>
+                        <td>{{ p.fecha_pago | date: 'dd/MM/yyyy' }}</td>
+                        <td>{{ p.periodo_desde | date: 'dd/MM/yy' }} – {{ p.periodo_hasta | date: 'dd/MM/yy' }}</td>
+                        <td>{{ p.monto ? (p.monto | currency: p.moneda : 'symbol-narrow') : '—' }}</td>
+                        <td>{{ p.referencia }}</td>
+                        <td>{{ p.registrado_por || '—' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            }
+          </div>
 
           @if (s.modulos) {
             <div class="app__bloque">
@@ -280,6 +326,66 @@
           <button class="btn btn--primary" type="submit" [disabled]="guardando()">{{ guardando() ? 'Contratando… (puede tardar)' : 'Contratar' }}</button>
         </div>
       </form>
+    </div>
+  </div>
+}
+
+@if (vigenciaEdit(); as e) {
+  <div class="modal-overlay" (click)="vigenciaEdit.set(null)">
+    <div class="modal" role="dialog" aria-labelledby="t-vig" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3 id="t-vig">Vigencia — {{ e.s.producto_nombre }}</h3>
+        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="vigenciaEdit.set(null)">✕</button>
+      </div>
+      @if (error()) { <div class="alerta alerta--error">{{ error() }}</div> }
+      <div class="form-grid">
+        <div class="campo"><label for="v-mod">Modalidad de pago <span class="req">*</span></label>
+          <select id="v-mod" [(ngModel)]="e.modalidad_pago">@for (m of modalidades; track m) { <option [value]="m">{{ m | titlecase }}</option> }</select></div>
+        <div class="campo"><label for="v-con">Fecha de contratación</label>
+          <input id="v-con" type="date" [(ngModel)]="e.fecha_contratacion" /></div>
+        <div class="campo"><label for="v-prox">Fecha de próximo pago <span class="req">*</span></label>
+          <input id="v-prox" type="date" [(ngModel)]="e.fecha_proximo_pago" /></div>
+        <div class="campo"><label for="v-gracia">Días de gracia</label>
+          <input id="v-gracia" type="number" min="0" max="30" [(ngModel)]="e.dias_gracia" /></div>
+        <div class="campo campo--full">
+          <label class="interruptor"><input type="checkbox" [(ngModel)]="e.suspension_automatica" /> Suspender automáticamente a las 00:00 del día de vencimiento (más los días de gracia)</label>
+        </div>
+      </div>
+      <p class="ayuda">Desde 30 días antes, la app muestra al cliente un aviso de vencimiento; desde 5 días hábiles, más intenso.</p>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" type="button" (click)="vigenciaEdit.set(null)">Cancelar</button>
+        <button class="btn btn--primary" type="button" (click)="guardarVigencia()" [disabled]="guardando()">Guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (pagoEdit(); as e) {
+  <div class="modal-overlay" (click)="pagoEdit.set(null)">
+    <div class="modal" role="dialog" aria-labelledby="t-pago" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3 id="t-pago">Registrar pago — {{ e.s.producto_nombre }}</h3>
+        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="pagoEdit.set(null)">✕</button>
+      </div>
+      @if (error()) { <div class="alerta alerta--error">{{ error() }}</div> }
+      <p class="ayuda">Cubre el periodo <b>{{ periodoPago(e) }}</b> ({{ e.s.modalidad_pago }}). La fecha de próximo pago se recorre al final de ese periodo.
+        @if (e.s.suspension_motivo === 'vencimiento') { <b>La app se reactivará.</b> }</p>
+      <div class="form-grid">
+        <div class="campo campo--full"><label for="p-ref">Referencia del pago <span class="req">*</span></label>
+          <input id="p-ref" type="text" [(ngModel)]="e.referencia" placeholder="ej. folio de transferencia o factura" /></div>
+        <div class="campo"><label for="p-fecha">Fecha del pago</label>
+          <input id="p-fecha" type="date" [(ngModel)]="e.fecha_pago" [max]="hoy" /></div>
+        <div class="campo"><label for="p-monto">Monto</label>
+          <input id="p-monto" type="number" min="0" step="0.01" [(ngModel)]="e.monto" /></div>
+        <div class="campo"><label for="p-moneda">Moneda</label>
+          <select id="p-moneda" [(ngModel)]="e.moneda"><option value="MXN">MXN</option><option value="USD">USD</option></select></div>
+        <div class="campo campo--full"><label for="p-notas">Notas</label>
+          <textarea id="p-notas" rows="2" [(ngModel)]="e.notas"></textarea></div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" type="button" (click)="pagoEdit.set(null)">Cancelar</button>
+        <button class="btn btn--primary" type="button" (click)="guardarPago()" [disabled]="guardando()">Registrar pago</button>
+      </div>
     </div>
   </div>
 }

@@ -26,6 +26,11 @@ export const routes: Routes = [
           import('./features/clientes/cliente-detalle.component').then(m => m.ClienteDetalleComponent),
       },
       {
+        path: 'vigencias',
+        loadComponent: () =>
+          import('./features/vigencias/vigencias.component').then(m => m.VigenciasComponent),
+      },
+      {
         path: 'catalogo/productos',
         loadComponent: () =>
           import('./features/catalogo/catalogo-productos.component').then(m => m.CatalogoProductosComponent),
