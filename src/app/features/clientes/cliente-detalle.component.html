@@ -21,10 +21,12 @@
         @if (c.notas) { <p class="notas">{{ c.notas }}</p> }
       </div>
       <div class="crud__actions">
-        <button class="btn btn--secondary" type="button" (click)="editarCliente()">
-          {{ c.datos_fiscales_completos ? 'Editar datos' : 'Capturar datos fiscales' }}
-        </button>
-        @if (productosDisponibles().length > 0) {
+        @if (puede('clientes.editar')) {
+          <button class="btn btn--secondary" type="button" (click)="editarCliente()">
+            {{ c.datos_fiscales_completos ? 'Editar datos' : 'Capturar datos fiscales' }}
+          </button>
+        }
+        @if (productosDisponibles().length > 0 && puede('suscripciones.gestionar')) {
           <button class="btn btn--primary" type="button" (click)="agregarApp()">+ Contratar app</button>
         }
       </div>
@@ -33,7 +35,9 @@
     @if (!c.datos_fiscales_completos) {
       <div class="alerta alerta--advertencia">
         Faltan datos de la Constancia de Situación Fiscal de este cliente.
-        <button class="btn btn--secondary btn--sm" type="button" (click)="editarCliente()">Capturar ahora</button>
+        @if (puede('clientes.editar')) {
+          <button class="btn btn--secondary btn--sm" type="button" (click)="editarCliente()">Capturar ahora</button>
+        }
       </div>
     }
 
@@ -101,7 +105,7 @@
               <dd>
                 @if (producto(s.producto)?.planes?.length) {
                   <select [value]="s.plan ?? ''" (change)="cambiarPlan(s, $any($event.target).value)"
-                          [disabled]="ocupado() === s.id || s.estatus_almacenado !== 'activo'" aria-label="Plan">
+                          [disabled]="ocupado() === s.id || s.estatus_almacenado !== 'activo' || !puede('suscripciones.gestionar')" aria-label="Plan">
                     @if (!s.plan) { <option value="" disabled>Sin plan</option> }
                     @for (p of producto(s.producto)!.planes; track p.codigo) {
                       <option [value]="p.codigo">{{ p.nombre }}</option>
@@ -128,7 +132,7 @@
                 <dd>
                   <label class="interruptor">
                     <input type="checkbox" [checked]="s.ws_cntpaq_habilitado" (change)="cambiarWs(s, $any($event.target).checked)"
-                           [disabled]="ocupado() === s.id" />
+                           [disabled]="ocupado() === s.id || !puede('suscripciones.gestionar')" />
                     {{ s.ws_cntpaq_habilitado ? 'Habilitado' : 'No habilitado' }}
                   </label>
                 </dd>
@@ -158,11 +162,19 @@
               <p class="texto-tenue">Sin vigencia definida: no se avisa ni se suspende automáticamente.</p>
             }
             <div class="app__acciones-linea">
-              <button class="btn btn--secondary btn--sm" type="button" (click)="editarVigencia(s)" [disabled]="ocupado() === s.id">
-                {{ s.fecha_proximo_pago ? 'Editar vigencia' : 'Definir vigencia' }}
-              </button>
+              @if (puede('vigencias.gestionar')) {
+                <button class="btn btn--secondary btn--sm" type="button" (click)="editarVigencia(s)" [disabled]="ocupado() === s.id">
+                  {{ s.fecha_proximo_pago ? 'Editar vigencia' : 'Definir vigencia' }}
+                </button>
+              }
               @if (s.fecha_proximo_pago) {
-                <button class="btn btn--primary btn--sm" type="button" (click)="registrarPago(s)" [disabled]="ocupado() === s.id">Registrar pago</button>
+                @if (puede('pagos.registrar')) {
+                  <button class="btn btn--primary btn--sm" type="button" (click)="registrarPago(s)" [disabled]="ocupado() === s.id">Registrar pago</button>
+                }
+                @if (s.estatus_almacenado === 'suspendido' && s.suspension_motivo === 'vencimiento' && puede('prorrogas.solicitar')) {
+                  <button class="btn btn--secondary btn--sm" type="button" (click)="pedirProrroga(s)" [disabled]="ocupado() === s.id">Solicitar prórroga</button>
+                }
+                <button class="btn btn--secondary btn--sm" type="button" (click)="verProrrogas(s)">{{ prorrogasDe(s.id) ? 'Ocultar prórrogas' : 'Prórrogas' }}</button>
                 <button class="btn btn--secondary btn--sm" type="button" (click)="verPagos(s)">{{ pagosDe(s.id) ? 'Ocultar pagos' : 'Ver pagos' }}</button>
               }
             </div>
@@ -182,6 +194,35 @@
                         <td>{{ p.monto ? (p.monto | currency: p.moneda : 'symbol-narrow') : '—' }}</td>
                         <td>{{ p.referencia }}</td>
                         <td>{{ p.registrado_por || '—' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            }
+            @if (prorrogasDe(s.id); as pr) {
+              @if (pr === 'cargando') {
+                <span class="texto-tenue">Cargando prórrogas…</span>
+              } @else if (pr.length === 0) {
+                <span class="texto-tenue">Sin prórrogas.</span>
+              } @else {
+                <table class="crud__tabla pagos">
+                  <thead><tr><th>Solicitada</th><th>Días</th><th>Motivo</th><th>Estado</th><th>Vigencia</th><th>Resolvió</th><th></th></tr></thead>
+                  <tbody>
+                    @for (p of pr; track p.id) {
+                      <tr>
+                        <td>{{ p.solicitada_en | date: 'dd/MM/yy HH:mm' }}<div class="texto-tenue">{{ p.solicitada_por }}</div></td>
+                        <td>{{ p.dias }}</td>
+                        <td>{{ p.motivo_nombre }}@if (p.detalle) { <div class="texto-tenue">{{ p.detalle }}</div> }</td>
+                        <td>{{ etiquetaProrroga(p.estado) }}@if (p.comentario_resolucion) { <div class="texto-tenue">{{ p.comentario_resolucion }}</div> }</td>
+                        <td>{{ p.desde ? (p.desde | date: 'dd/MM/yy') + ' – ' + (p.hasta | date: 'dd/MM/yy') : '—' }}</td>
+                        <td>{{ p.resuelta_por || '—' }}@if (p.nivel_autorizacion) { <div class="texto-tenue">{{ p.nivel_autorizacion === 99 ? 'Superadmin' : 'Nivel ' + p.nivel_autorizacion }}</div> }</td>
+                        <td>
+                          @if (p.estado === 'solicitada') {
+                            <button class="btn btn--primary btn--sm" type="button" (click)="resolverProrroga(s, p, 'autorizar')">Autorizar</button>
+                            <button class="btn btn--secondary btn--sm" type="button" (click)="resolverProrroga(s, p, 'rechazar')">Rechazar</button>
+                          }
+                        </td>
                       </tr>
                     }
                   </tbody>
@@ -221,10 +262,12 @@
                 <div class="extra">
                   <span>{{ e.nombre }} <span class="texto-tenue">(+{{ e.incremento }} {{ etiquetaLimite(e.limite).toLowerCase() }} c/u)</span></span>
                   <span class="extra__total">{{ e.total }}</span>
-                  <button class="btn btn--secondary btn--sm" type="button" (click)="moverExtra(s, e, -1)"
-                          [disabled]="e.total === 0 || ocupado() === s.id" [attr.aria-label]="'Retirar ' + e.nombre">−</button>
-                  <button class="btn btn--secondary btn--sm" type="button" (click)="moverExtra(s, e, 1)"
-                          [disabled]="ocupado() === s.id" [attr.aria-label]="'Agregar ' + e.nombre">+</button>
+                  @if (puede('suscripciones.gestionar')) {
+                    <button class="btn btn--secondary btn--sm" type="button" (click)="moverExtra(s, e, -1)"
+                            [disabled]="e.total === 0 || ocupado() === s.id" [attr.aria-label]="'Retirar ' + e.nombre">−</button>
+                    <button class="btn btn--secondary btn--sm" type="button" (click)="moverExtra(s, e, 1)"
+                            [disabled]="ocupado() === s.id" [attr.aria-label]="'Agregar ' + e.nombre">+</button>
+                  }
                 </div>
               }
             </div>
@@ -251,15 +294,17 @@
             <button class="btn btn--secondary btn--sm" type="button" (click)="verMetricas(s)">
               {{ metricasDe(s.id) ? 'Ocultar métricas' : 'Ver métricas' }}
             </button>
-            @if (s.estatus_almacenado === 'activo' || s.estatus_almacenado === 'suspendido') {
+            @if ((s.estatus_almacenado === 'activo' || s.estatus_almacenado === 'suspendido') && puede('suscripciones.restablecer_admin')) {
               <button class="btn btn--secondary btn--sm" type="button" (click)="restablecerAdmin(s)"
                       [disabled]="ocupado() === s.id || s.estatus_almacenado !== 'activo'">Restablecer acceso del administrador</button>
+            }
+            @if ((s.estatus_almacenado === 'activo' || s.estatus_almacenado === 'suspendido') && puede('suscripciones.estatus')) {
               <button class="btn btn--sm" type="button" (click)="cambiarEstatus(s)" [disabled]="ocupado() === s.id"
                       [class.btn--peligro]="s.estatus_almacenado === 'activo'" [class.btn--primary]="s.estatus_almacenado !== 'activo'">
                 {{ s.estatus_almacenado === 'activo' ? 'Suspender' : 'Reactivar' }}
               </button>
             }
-            @if (s.estatus_almacenado === 'fallido') {
+            @if (s.estatus_almacenado === 'fallido' && puede('suscripciones.gestionar')) {
               <button class="btn btn--primary btn--sm" type="button" (click)="reintentar(s)" [disabled]="ocupado() === s.id">Reintentar alta</button>
             }
           </footer>

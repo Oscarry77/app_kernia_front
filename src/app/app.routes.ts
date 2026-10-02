@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth.guard';
+import { authGuard, permisoGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -35,9 +35,35 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/catalogo/catalogo-productos.component').then(m => m.CatalogoProductosComponent),
       },
+      // Fase 3 (02-oct-2026)
+      {
+        path: 'prorrogas',
+        canActivate: [permisoGuard('prorrogas.solicitar')],
+        loadComponent: () =>
+          import('./features/prorrogas/prorrogas.component').then(m => m.ProrrogasComponent),
+      },
+      {
+        path: 'operadores',
+        canActivate: [permisoGuard('operadores.gestionar')],
+        loadComponent: () =>
+          import('./features/operadores/operadores.component').then(m => m.OperadoresComponent),
+      },
+      {
+        path: 'escalafon',
+        canActivate: [permisoGuard('escalafon.gestionar')],
+        loadComponent: () =>
+          import('./features/escalafon/escalafon.component').then(m => m.EscalafonComponent),
+      },
+      {
+        path: 'bitacora',
+        canActivate: [permisoGuard('auditoria.ver')],
+        loadComponent: () =>
+          import('./features/auditoria/auditoria.component').then(m => m.AuditoriaComponent),
+      },
       // Modelo heredado, solo consulta.
       {
         path: 'tenants',
+        canActivate: [permisoGuard('auditoria.ver')],
         loadComponent: () =>
           import('./features/tenants/tenants.component').then(m => m.TenantsComponent),
       },

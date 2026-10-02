@@ -1,0 +1,73 @@
+<div class="crud">
+  <div class="crud__header">
+    <div>
+      <h2 class="crud__title">Escalafón de autorización</h2>
+      <p class="crud__subtitle">
+        Quién autoriza prórrogas y hasta cuántos días (máximo {{ maxDias() }}). Una segunda prórroga en el mismo vencimiento
+        la autoriza un nivel mayor. El superadministrador siempre puede autorizar.
+      </p>
+    </div>
+    <div class="crud__actions">
+      <button class="btn btn--primary" type="button" (click)="nuevo()">+ Agregar nivel</button>
+    </div>
+  </div>
+
+  <div class="crud__tabla-wrap">
+    @if (cargando()) {
+      <div class="crud__vacio">Cargando...</div>
+    } @else if (errorCarga()) {
+      <div class="crud__vacio texto-error">{{ errorCarga() }}</div>
+    } @else if (niveles().length === 0) {
+      <div class="crud__vacio">Aún no hay escalafón: mientras tanto, solo el superadministrador autoriza prórrogas.</div>
+    } @else {
+      <table class="crud__tabla">
+        <thead><tr><th>Nivel</th><th>Puesto</th><th>Persona</th><th>Autoriza hasta</th><th>Estatus</th><th></th></tr></thead>
+        <tbody>
+          @for (n of niveles(); track n.id) {
+            <tr>
+              <td><strong>{{ n.nivel }}</strong></td>
+              <td>{{ n.puesto }}</td>
+              <td>{{ n.usuario }}<div class="texto-tenue">{{ n.email }}</div></td>
+              <td>{{ n.dias_max }} día{{ n.dias_max === 1 ? '' : 's' }}</td>
+              <td><span class="badge" [class.badge--activo]="n.activo" [class.badge--inactivo]="!n.activo">{{ n.activo ? 'Activo' : 'Inactivo' }}</span></td>
+              <td class="acciones"><button class="btn btn--secondary btn--sm" type="button" (click)="editar(n)">Editar</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+@if (edicion(); as e) {
+  <div class="modal-overlay" (click)="!guardando() && edicion.set(null)">
+    <div class="modal" role="dialog" aria-labelledby="t-niv" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3 id="t-niv">{{ e.id ? 'Editar nivel' : 'Agregar nivel' }}</h3>
+        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="edicion.set(null)" [disabled]="guardando()">✕</button>
+      </div>
+      @if (error()) { <div class="alerta alerta--error">{{ error() }}</div> }
+      <div class="form-grid">
+        <div class="campo"><label for="n-nivel">Nivel <span class="req">*</span></label>
+          <input id="n-nivel" type="number" min="1" max="20" [(ngModel)]="e.nivel" /></div>
+        <div class="campo"><label for="n-puesto">Puesto <span class="req">*</span></label>
+          <input id="n-puesto" type="text" maxlength="120" [(ngModel)]="e.puesto" placeholder="Ej. Gerente comercial" /></div>
+        <div class="campo"><label for="n-usuario">Persona <span class="req">*</span></label>
+          <select id="n-usuario" [(ngModel)]="e.usuario_id">
+            <option [ngValue]="null" disabled>Selecciona</option>
+            @for (o of candidatos(); track o.id) { <option [ngValue]="o.id">{{ o.nombre }} ({{ o.rol_nombre }})</option> }
+          </select></div>
+        <div class="campo"><label for="n-dias">Autoriza hasta (días)</label>
+          <input id="n-dias" type="number" min="1" [max]="maxDias()" [(ngModel)]="e.dias_max" /></div>
+        @if (e.id) {
+          <div class="campo"><label><input type="checkbox" [(ngModel)]="e.activo" /> Activo</label></div>
+        }
+      </div>
+      <p class="ayuda">Solo pueden estar en el escalafón operadores con rol de Dirección o Gerente.</p>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" type="button" (click)="edicion.set(null)" [disabled]="guardando()">Cancelar</button>
+        <button class="btn btn--primary" type="button" (click)="guardar()" [disabled]="guardando()">Guardar</button>
+      </div>
+    </div>
+  </div>
+}

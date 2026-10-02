@@ -173,3 +173,78 @@ export interface ConPasswordTemporal<T> {
   data: T;
   password_temporal: string;
 }
+
+// ── Fase 3 (02-oct-2026): operadores, escalafón, prórrogas y bitácora ──
+
+export interface Operador {
+  id: number;
+  nombre: string;
+  email: string;
+  rol: string;
+  rol_nombre: string;
+  puesto: string | null;
+  activo: boolean;
+  ultimo_acceso: string | null;
+  cartera: boolean;
+  clientes_en_cartera: number | null;
+  nivel_autorizacion: number | null;
+}
+
+export interface RolCatalogo {
+  clave: string;
+  nombre: string;
+}
+
+export interface NivelEscalafon {
+  id: number;
+  nivel: number;
+  puesto: string;
+  usuario_id: number;
+  usuario: string | null;
+  email: string | null;
+  dias_max: number;
+  activo: boolean;
+}
+
+export type EstadoProrroga = 'solicitada' | 'autorizada' | 'rechazada' | 'vencida' | 'cerrada_por_pago' | 'cancelada';
+
+export interface Prorroga {
+  id: number;
+  suscripcion_id: number;
+  fecha_vencimiento: string | null;
+  dias: number;
+  motivo: string;
+  motivo_nombre: string;
+  detalle: string | null;
+  estado: EstadoProrroga;
+  desde: string | null;
+  hasta: string | null;
+  solicitada_por: string | null;
+  resuelta_por: string | null;
+  nivel_autorizacion: number | null;
+  comentario_resolucion: string | null;
+  solicitada_en: string | null;
+  resuelta_en: string | null;
+  // Solo en /prorrogas/pendientes
+  cliente_id?: number;
+  cliente?: string;
+  producto?: string;
+  producto_nombre?: string;
+}
+
+export interface MotivoProrroga {
+  clave: string;
+  nombre: string;
+}
+
+export interface RegistroAuditoria {
+  id: number;
+  fecha: string | null;
+  usuario: string | null;
+  accion: string;
+  cliente_id: number | null;
+  suscripcion_id: number | null;
+  antes: Record<string, unknown> | null;
+  despues: Record<string, unknown> | null;
+  ip: string | null;
+}

@@ -1,0 +1,108 @@
+<div class="crud">
+  <div class="crud__header">
+    <div>
+      <h2 class="crud__title">Operadores</h2>
+      <p class="crud__subtitle">
+        Personas que usan este panel y su rol. Los vendedores solo ven a los clientes de su cartera;
+        los clientes que dan de alta quedan en ella automáticamente.
+      </p>
+    </div>
+    <div class="crud__actions">
+      <button class="btn btn--primary" type="button" (click)="nuevo()">+ Nuevo operador</button>
+    </div>
+  </div>
+
+  <div class="crud__tabla-wrap">
+    @if (cargando()) {
+      <div class="crud__vacio">Cargando...</div>
+    } @else if (errorCarga()) {
+      <div class="crud__vacio texto-error">{{ errorCarga() }}</div>
+    } @else {
+      <table class="crud__tabla">
+        <thead>
+          <tr><th>Operador</th><th>Rol</th><th>Puesto</th><th>Cartera</th><th>Escalafón</th><th>Último acceso</th><th>Estatus</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (o of operadores(); track o.id) {
+            <tr>
+              <td><strong>{{ o.nombre }}</strong>@if (o.id === yo()) { <span class="texto-tenue"> (tú)</span> }<div class="texto-tenue">{{ o.email }}</div></td>
+              <td>{{ o.rol_nombre }}</td>
+              <td>{{ o.puesto || '—' }}</td>
+              <td>{{ o.cartera ? (o.clientes_en_cartera + ' cliente' + (o.clientes_en_cartera === 1 ? '' : 's')) : 'Todos' }}</td>
+              <td>{{ o.nivel_autorizacion ? 'Nivel ' + o.nivel_autorizacion : '—' }}</td>
+              <td>{{ o.ultimo_acceso ? (o.ultimo_acceso | date: 'dd/MM/yyyy HH:mm') : 'Nunca' }}</td>
+              <td><span class="badge" [class.badge--activo]="o.activo" [class.badge--inactivo]="!o.activo">{{ o.activo ? 'Activo' : 'Inactivo' }}</span></td>
+              <td class="acciones">
+                @if (o.cartera && editable(o)) {
+                  <button class="btn btn--secondary btn--sm" type="button" (click)="abrirCartera(o)">Cartera</button>
+                }
+                @if (editable(o)) {
+                  <button class="btn btn--secondary btn--sm" type="button" (click)="editar(o)">Editar</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+@if (edicion(); as e) {
+  <div class="modal-overlay" (click)="!guardando() && edicion.set(null)">
+    <div class="modal" role="dialog" aria-labelledby="t-op" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3 id="t-op">{{ e.id ? 'Editar operador' : 'Nuevo operador' }}</h3>
+        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="edicion.set(null)" [disabled]="guardando()">✕</button>
+      </div>
+      @if (error()) { <div class="alerta alerta--error">{{ error() }}</div> }
+      <div class="form-grid">
+        <div class="campo"><label for="op-nombre">Nombre <span class="req">*</span></label>
+          <input id="op-nombre" type="text" maxlength="120" [(ngModel)]="e.nombre" /></div>
+        <div class="campo"><label for="op-email">Correo <span class="req">*</span></label>
+          <input id="op-email" type="email" maxlength="100" [(ngModel)]="e.email" [disabled]="!!e.id" /></div>
+        <div class="campo"><label for="op-rol">Rol</label>
+          <select id="op-rol" [(ngModel)]="e.rol" [disabled]="e.id === yo()">
+            @for (r of rolesAsignables(); track r.clave) { <option [value]="r.clave">{{ r.nombre }}</option> }
+          </select></div>
+        <div class="campo"><label for="op-puesto">Puesto</label>
+          <input id="op-puesto" type="text" maxlength="120" [(ngModel)]="e.puesto" /></div>
+        @if (e.id) {
+          <div class="campo"><label><input type="checkbox" [(ngModel)]="e.activo" [disabled]="e.id === yo()" /> Activo</label></div>
+        }
+      </div>
+      @if (!e.id) {
+        <p class="ayuda">Kernia genera una contraseña de 18 caracteres y la envía a su correo; si el correo no está configurado se muestra una sola vez aquí.</p>
+      }
+      <div class="modal__footer">
+        <button class="btn btn--secondary" type="button" (click)="edicion.set(null)" [disabled]="guardando()">Cancelar</button>
+        <button class="btn btn--primary" type="button" (click)="guardar()" [disabled]="guardando()">{{ e.id ? 'Guardar' : 'Crear operador' }}</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (cartera(); as c) {
+  <div class="modal-overlay" (click)="!guardando() && cartera.set(null)">
+    <div class="modal" role="dialog" aria-labelledby="t-cart" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3 id="t-cart">Cartera de {{ c.operador.nombre }}</h3>
+        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="cartera.set(null)" [disabled]="guardando()">✕</button>
+      </div>
+      @if (error()) { <div class="alerta alerta--error">{{ error() }}</div> }
+      <p class="ayuda">{{ c.seleccion.size }} cliente{{ c.seleccion.size === 1 ? '' : 's' }} seleccionado{{ c.seleccion.size === 1 ? '' : 's' }}.</p>
+      <input type="search" class="buscador" placeholder="Filtrar clientes" [(ngModel)]="c.filtro" />
+      <div class="check-lista">
+        @for (x of clientesFiltrados(c); track x.id) {
+          <label><input type="checkbox" [checked]="c.seleccion.has(x.id)" (change)="alternar(c, x.id)" /> {{ x.nombre }} <code class="texto-tenue">{{ x.slug }}</code></label>
+        } @empty {
+          <div class="texto-tenue">Sin clientes.</div>
+        }
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" type="button" (click)="cartera.set(null)" [disabled]="guardando()">Cancelar</button>
+        <button class="btn btn--primary" type="button" (click)="guardarCartera()" [disabled]="guardando()">Guardar cartera</button>
+      </div>
+    </div>
+  </div>
+}

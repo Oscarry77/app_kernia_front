@@ -1,0 +1,44 @@
+<div class="crud">
+  <div class="crud__header">
+    <div>
+      <h2 class="crud__title">Prórrogas</h2>
+      <p class="crud__subtitle">
+        Solicitudes de acceso provisional (1 a 6 días) para apps suspendidas por vencimiento. La autoriza una persona del
+        escalafón escribiendo su usuario y contraseña; no puede autorizar su propia solicitud.
+      </p>
+    </div>
+    <button class="btn btn--secondary" type="button" (click)="cargar()">Actualizar</button>
+  </div>
+
+  <div class="crud__tabla-wrap">
+    @if (cargando()) {
+      <div class="crud__vacio">Cargando...</div>
+    } @else if (error()) {
+      <div class="crud__vacio texto-error">{{ error() }}</div>
+    } @else if (filas().length === 0) {
+      <div class="crud__vacio">No hay solicitudes pendientes.</div>
+    } @else {
+      <table class="crud__tabla">
+        <thead>
+          <tr><th>Cliente</th><th>App</th><th>Vencimiento</th><th>Días</th><th>Motivo</th><th>Solicitó</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (p of filas(); track p.id) {
+            <tr>
+              <td><a [routerLink]="['/clientes', p.cliente_id]"><strong>{{ p.cliente }}</strong></a></td>
+              <td>{{ p.producto_nombre }}</td>
+              <td>{{ p.fecha_vencimiento | date: 'dd/MM/yyyy' }}</td>
+              <td>{{ p.dias }}</td>
+              <td>{{ p.motivo_nombre }}@if (p.detalle) { <div class="texto-tenue">{{ p.detalle }}</div> }</td>
+              <td>{{ p.solicitada_por }}<div class="texto-tenue">{{ p.solicitada_en | date: 'dd/MM/yyyy HH:mm' }}</div></td>
+              <td class="acciones">
+                <button class="btn btn--primary btn--sm" type="button" (click)="resolver(p, 'autorizar')">Autorizar</button>
+                <button class="btn btn--secondary btn--sm" type="button" (click)="resolver(p, 'rechazar')">Rechazar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>

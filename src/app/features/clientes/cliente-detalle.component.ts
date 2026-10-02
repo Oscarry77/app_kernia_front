@@ -6,8 +6,11 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
+import { AclService } from '../../core/services/acl.service';
+import { AuthService } from '../../core/services/auth.service';
 import { ClientesService } from '../../core/services/clientes.service';
-import type { Cliente, Pago, ProductoCatalogo, SuscripcionDetalle } from '../../core/models/panel.model';
+import type { Cliente, MotivoProrroga, Pago, ProductoCatalogo, Prorroga, SuscripcionDetalle } from '../../core/models/panel.model';
+import { etiquetaEstadoProrroga, resolverProrroga, solicitarProrroga } from '../prorrogas/prorroga-ui';
 import { ClienteFormComponent } from './cliente-form.component';
 import { COLOR_PRIMARIO, etiquetaDias, etiquetaEstatus, etiquetaLimite, mensajeError, mostrarPasswordUnaVez } from './panel-ui';
 
@@ -47,6 +50,8 @@ export class ClienteDetalleComponent implements OnInit {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private service = inject(ClientesService);
+  private acl = inject(AclService);
+  private auth = inject(AuthService);
 
   cliente = signal<Cliente<SuscripcionDetalle> | null>(null);
   catalogo = signal<ProductoCatalogo[]>([]);
@@ -70,6 +75,16 @@ export class ClienteDetalleComponent implements OnInit {
   vigenciaEdit = signal<EdicionVigencia | null>(null);
   pagoEdit = signal<CapturaPago | null>(null);
   pagos = signal<Record<number, Pago[] | 'cargando'>>({});
+
+  // Fase 3 (02-oct-2026): prórrogas.
+  prorrogas = signal<Record<number, Prorroga[] | 'cargando'>>({});
+  private motivos: { data: MotivoProrroga[]; max_dias: number } | null = null;
+  readonly etiquetaProrroga = etiquetaEstadoProrroga;
+
+  /** Oculta lo que el rol no permite; Kernia valida de nuevo cada acción. */
+  puede(permiso: string): boolean {
+    return this.auth.puede(permiso);
+  }
 
   formApp = this.fb.group({
     producto: ['', Validators.required],
@@ -449,6 +464,44 @@ export class ClienteDetalleComponent implements OnInit {
     this.service.metricas(s.id).subscribe({
       next: r => this.metricas.set({ ...this.metricas(), [s.id]: r.data }),
       error: () => this.metricas.set({ ...this.metricas(), [s.id]: { ok: false } }),
+    });
+  }
+
+  // ── Prórrogas (fase 3) ────────────────────────────────────────────────
+
+  async pedirProrroga(s: SuscripcionDetalle): Promise<void> {
+    this.motivos ??= await firstValueFrom(this.acl.motivos());
+    if (await solicitarProrroga(this.acl, s, this.motivos.data, this.motivos.max_dias)) {
+      this.recargarProrrogas(s.id);
+    }
+  }
+
+  async resolverProrroga(s: SuscripcionDetalle, p: Prorroga, accion: 'autorizar' | 'rechazar'): Promise<void> {
+    if (await resolverProrroga(this.acl, p, accion, `${this.cliente()?.nombre ?? ''} · ${s.producto_nombre}`)) {
+      this.cargar();
+      this.recargarProrrogas(s.id);
+    }
+  }
+
+  verProrrogas(s: SuscripcionDetalle): void {
+    const actuales = { ...this.prorrogas() };
+    if (actuales[s.id]) {
+      delete actuales[s.id];
+      this.prorrogas.set(actuales);
+      return;
+    }
+    this.recargarProrrogas(s.id);
+  }
+
+  prorrogasDe(id: number): Prorroga[] | 'cargando' | undefined {
+    return this.prorrogas()[id];
+  }
+
+  private recargarProrrogas(id: number): void {
+    this.prorrogas.set({ ...this.prorrogas(), [id]: 'cargando' });
+    this.acl.prorrogas(id).subscribe({
+      next: r => this.prorrogas.set({ ...this.prorrogas(), [id]: r.data }),
+      error: () => this.prorrogas.set({ ...this.prorrogas(), [id]: [] }),
     });
   }
 

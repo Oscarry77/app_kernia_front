@@ -23,7 +23,7 @@
             <span class="chip" [class.chip--activo]="p.permite_ws_cntpaq">WS-CNTPAQi.Net: {{ p.permite_ws_cntpaq ? 'sí' : 'no aplica' }}</span>
           </div>
         </div>
-        <button class="btn btn--secondary btn--sm" type="button" (click)="editarProducto(p)">Editar app</button>
+        <button class="btn btn--secondary btn--sm" type="button" (click)="editarProducto(p)" [hidden]="!puede('catalogo.gestionar')">Editar app</button>
       </header>
 
       @if (p.modulos.length) {
@@ -43,7 +43,7 @@
       <div class="bloque">
         <div class="bloque__titulo">
           <h4>Planes</h4>
-          <button class="btn btn--secondary btn--sm" type="button" (click)="nuevoPlan(p)">+ Nuevo plan</button>
+          <button class="btn btn--secondary btn--sm" type="button" (click)="nuevoPlan(p)" [hidden]="!puede('catalogo.gestionar')">+ Nuevo plan</button>
         </div>
         @if (p.planes.length === 0) {
           <p class="texto-tenue">Esta app no tiene catálogo de planes.</p>
@@ -66,7 +66,7 @@
                   </td>
                   <td>{{ pl.clientes ?? 0 }}</td>
                   <td><span class="badge" [class.badge--activo]="pl.activo" [class.badge--inactivo]="!pl.activo">{{ pl.activo ? 'Activo' : 'Inactivo' }}</span></td>
-                  <td><button class="btn btn--secondary btn--sm" type="button" (click)="editarPlan(p, pl)">Editar</button></td>
+                  <td><button class="btn btn--secondary btn--sm" type="button" (click)="editarPlan(p, pl)" [hidden]="!puede('catalogo.gestionar')">Editar</button></td>
                 </tr>
               }
             </tbody>
@@ -77,7 +77,7 @@
       <div class="bloque">
         <div class="bloque__titulo">
           <h4>Extras</h4>
-          <button class="btn btn--secondary btn--sm" type="button" (click)="nuevoExtra(p)">+ Nuevo extra</button>
+          <button class="btn btn--secondary btn--sm" type="button" (click)="nuevoExtra(p)" [hidden]="!puede('catalogo.gestionar')">+ Nuevo extra</button>
         </div>
         @if (p.extras.length === 0) {
           <p class="texto-tenue">Sin extras.</p>
@@ -91,7 +91,7 @@
                   <td>{{ etiquetaLimite(x.limite) }}</td>
                   <td>+{{ x.incremento }}</td>
                   <td><span class="badge" [class.badge--activo]="x.activo" [class.badge--inactivo]="!x.activo">{{ x.activo ? 'Activo' : 'Inactivo' }}</span></td>
-                  <td><button class="btn btn--secondary btn--sm" type="button" (click)="editarExtra(p, x)">Editar</button></td>
+                  <td><button class="btn btn--secondary btn--sm" type="button" (click)="editarExtra(p, x)" [hidden]="!puede('catalogo.gestionar')">Editar</button></td>
                 </tr>
               }
             </tbody>

@@ -1,0 +1,42 @@
+// (02-oct-2026) Fase 3: estilos comunes de operadores, escalafón, prórrogas y bitácora.
+
+.acciones {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.check-lista {
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-top: 8px;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    cursor: pointer;
+  }
+}
+
+.json {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  max-width: 420px;
+}
+
+.paginacion {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 12px;
+}

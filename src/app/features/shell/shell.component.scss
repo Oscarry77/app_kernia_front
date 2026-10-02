@@ -24,7 +24,8 @@
 
 .admin-shell__nav {
   display: flex;
-  gap: v.$spacing-lg;
+  flex-wrap: wrap;
+  gap: v.$spacing-xs;
 
   a {
     color: v.$text-muted;

@@ -13,7 +13,9 @@
         (keyup.enter)="buscar(q.value)"
         (search)="buscar(q.value)"
       />
-      <button class="btn btn--primary" type="button" (click)="mostrarForm.set(true)">+ Nuevo cliente</button>
+      @if (puede('clientes.crear')) {
+        <button class="btn btn--primary" type="button" (click)="mostrarForm.set(true)">+ Nuevo cliente</button>
+      }
     </div>
   </div>
 

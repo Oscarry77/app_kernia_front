@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import type { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 
+import { AuthService } from '../../core/services/auth.service';
 import { ClientesService } from '../../core/services/clientes.service';
 import type { Cliente, SuscripcionDetalle } from '../../core/models/panel.model';
 import { ClienteFormComponent } from './cliente-form.component';
@@ -19,6 +20,12 @@ import { etiquetaEstatus, mensajeError } from './panel-ui';
 })
 export class ClientesComponent implements OnInit {
   private service = inject(ClientesService);
+  private auth = inject(AuthService);
+
+  /** (02-oct-2026) Fase 3: oculta lo que el rol no permite; Kernia valida de nuevo. */
+  puede(permiso: string): boolean {
+    return this.auth.puede(permiso);
+  }
   private router = inject(Router);
 
   clientes = signal<Cliente[]>([]);

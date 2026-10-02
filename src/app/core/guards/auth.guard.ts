@@ -32,3 +32,24 @@ export const authGuard: CanActivateFn = () => {
     }),
   );
 };
+
+/**
+ * (02-oct-2026) Fase 3: la ruta exige un permiso del rol. Si el perfil
+ * guardado no trae permisos, se consulta a Kernia antes de decidir. Sin
+ * permiso → Clientes. Kernia vuelve a validar cada petición (403).
+ */
+export function permisoGuard(permiso: string): CanActivateFn {
+  return () => {
+    const auth = inject(AuthService);
+    const router = inject(Router);
+    const decidir = () => (auth.puede(permiso) ? true : router.createUrlTree(['/clientes']));
+
+    if (auth.perfilCargado()) {
+      return decidir();
+    }
+    return auth.cargarPerfil().pipe(
+      map(decidir),
+      catchError(() => of(router.createUrlTree(['/clientes']))),
+    );
+  };
+}

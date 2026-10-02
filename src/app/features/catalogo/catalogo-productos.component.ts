@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import type { HttpErrorResponse } from '@angular/common/http';
 import Swal from 'sweetalert2';
 
+import { AuthService } from '../../core/services/auth.service';
 import { CatalogoService } from '../../core/services/catalogo.service';
 import type { ExtraCatalogo, ModuloCatalogo, PlanCatalogo, ProductoCatalogo } from '../../core/models/panel.model';
 import { COLOR_PRIMARIO, etiquetaLimite, mensajeError } from '../clientes/panel-ui';
@@ -45,6 +46,12 @@ interface EdicionExtra {
 })
 export class CatalogoProductosComponent implements OnInit {
   private service = inject(CatalogoService);
+  private auth = inject(AuthService);
+
+  /** (02-oct-2026) Fase 3: oculta lo que el rol no permite; Kernia valida de nuevo. */
+  puede(permiso: string): boolean {
+    return this.auth.puede(permiso);
+  }
 
   productos = signal<ProductoCatalogo[]>([]);
   limitesDisponibles = signal<string[]>([]);

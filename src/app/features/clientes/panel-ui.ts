@@ -15,7 +15,7 @@ export function mensajeError(err: HttpErrorResponse, porDefecto: string): string
   return err?.error?.message ?? porDefecto;
 }
 
-const escapar = (s: string) =>
+export const escapar = (s: string) =>
   s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 /**

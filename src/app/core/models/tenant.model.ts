@@ -45,6 +45,12 @@ export interface LandlordAdmin {
   nombre: string;
   email: string;
   ultimo_acceso: string | null;
+  // (02-oct-2026) Fase 3: rol y permisos del operador.
+  rol?: string;
+  rol_nombre?: string;
+  puesto?: string | null;
+  permisos?: string[];
+  cartera?: boolean;
 }
 
 export interface LandlordLoginRequest {

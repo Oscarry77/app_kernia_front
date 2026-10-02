@@ -12,13 +12,19 @@
     <nav class="admin-shell__nav">
       <a routerLink="/clientes" routerLinkActive="active">Clientes</a>
       <a routerLink="/vigencias" routerLinkActive="active">Vigencias</a>
+      @if (puede('prorrogas.solicitar')) { <a routerLink="/prorrogas" routerLinkActive="active">Prórrogas</a> }
       <a routerLink="/catalogo/productos" routerLinkActive="active">Productos y planes</a>
-      <a routerLink="/tenants" routerLinkActive="active" title="Modelo anterior, solo consulta">Tenants (heredado)</a>
+      @if (puede('operadores.gestionar')) { <a routerLink="/operadores" routerLinkActive="active">Operadores</a> }
+      @if (puede('escalafon.gestionar')) { <a routerLink="/escalafon" routerLinkActive="active">Escalafón</a> }
+      @if (puede('auditoria.ver')) {
+        <a routerLink="/bitacora" routerLinkActive="active">Bitácora</a>
+        <a routerLink="/tenants" routerLinkActive="active" title="Modelo anterior, solo consulta">Tenants (heredado)</a>
+      }
     </nav>
 
     <div class="admin-shell__user">
       @if (admin(); as u) {
-        <span class="admin-shell__user-name">{{ u.nombre }}</span>
+        <span class="admin-shell__user-name">{{ u.nombre }}@if (u.rol_nombre) { <small> · {{ u.rol_nombre }}</small> }</span>
       }
       <button type="button" class="admin-shell__logout" (click)="logout()">Salir</button>
     </div>

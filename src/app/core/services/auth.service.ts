@@ -27,6 +27,30 @@ export class AuthService {
   readonly currentUser = this._user.asReadonly();
   readonly isLoggedIn  = computed(() => !!this._token());
 
+  /**
+   * (02-oct-2026) Fase 3: el panel oculta lo que el rol no permite. Es solo
+   * comodidad visual; quien decide es Kernia (403/404 en la API).
+   */
+  puede(permiso: string): boolean {
+    const permisos = this._user()?.permisos ?? [];
+    return permisos.includes('*') || permisos.includes(permiso);
+  }
+
+  /** Los permisos ya se conocen (una sesión anterior a la fase 3 no los traía). */
+  perfilCargado(): boolean {
+    return Array.isArray(this._user()?.permisos);
+  }
+
+  /** Recarga el perfil (rol y permisos vigentes) desde Kernia. */
+  cargarPerfil(): Observable<LandlordAdmin> {
+    return this.http.get<LandlordAdmin>(`${environment.apiUrl}/auth/me`).pipe(
+      tap(u => {
+        this._user.set(u);
+        localStorage.setItem(USER_KEY, JSON.stringify(u));
+      }),
+    );
+  }
+
   login(credentials: LandlordLoginRequest): Observable<LandlordAuthResponse> {
     return this.http
       .post<LandlordAuthResponse>(`${environment.apiUrl}/auth/login`, credentials)

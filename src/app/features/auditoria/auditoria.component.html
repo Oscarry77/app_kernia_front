@@ -1,0 +1,45 @@
+<div class="crud">
+  <div class="crud__header">
+    <div>
+      <h2 class="crud__title">Bitácora</h2>
+      <p class="crud__subtitle">Cada acción del panel: quién, cuándo, desde qué IP y qué cambió. Nunca contiene contraseñas.</p>
+    </div>
+    <div class="crud__actions">
+      <input type="search" class="buscador" placeholder="Acción (ej. prorroga, suscripcion.pago)" [(ngModel)]="accion"
+             (keyup.enter)="cargar(1)" (search)="cargar(1)" />
+    </div>
+  </div>
+
+  <div class="crud__tabla-wrap">
+    @if (cargando()) {
+      <div class="crud__vacio">Cargando...</div>
+    } @else if (error()) {
+      <div class="crud__vacio texto-error">{{ error() }}</div>
+    } @else if (registros().length === 0) {
+      <div class="crud__vacio">Sin registros.</div>
+    } @else {
+      <table class="crud__tabla">
+        <thead><tr><th>Fecha</th><th>Operador</th><th>Acción</th><th>Cliente</th><th>Antes</th><th>Después</th></tr></thead>
+        <tbody>
+          @for (a of registros(); track a.id) {
+            <tr>
+              <td>{{ a.fecha | date: 'dd/MM/yyyy HH:mm' }}<div class="texto-tenue">{{ a.ip }}</div></td>
+              <td>{{ a.usuario || 'Sistema' }}</td>
+              <td><code>{{ a.accion }}</code></td>
+              <td>
+                @if (a.cliente_id) { <a [routerLink]="['/clientes', a.cliente_id]">#{{ a.cliente_id }}</a> } @else { — }
+              </td>
+              <td><pre class="json">{{ json(a.antes) }}</pre></td>
+              <td><pre class="json">{{ json(a.despues) }}</pre></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div class="paginacion">
+        <span class="texto-tenue">{{ total() }} registros · página {{ pagina() }} de {{ paginas() }}</span>
+        <button class="btn btn--secondary btn--sm" type="button" [disabled]="pagina() <= 1" (click)="cargar(pagina() - 1)">Anterior</button>
+        <button class="btn btn--secondary btn--sm" type="button" [disabled]="pagina() >= paginas()" (click)="cargar(pagina() + 1)">Siguiente</button>
+      </div>
+    }
+  </div>
+</div>
