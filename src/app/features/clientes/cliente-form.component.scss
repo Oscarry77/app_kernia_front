@@ -1,0 +1,55 @@
+@use '../../styles/comercializa-variables' as v;
+
+.modal--amplio {
+  max-width: 980px;
+}
+
+.seccion {
+  border: 1px solid v.$border-card;
+  border-radius: v.$radius-md;
+  padding: v.$spacing-md;
+  margin: 0 0 v.$spacing-md;
+
+  legend {
+    padding: 0 v.$spacing-xs;
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-semibold;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+}
+
+.campo--doble {
+  grid-column: span 2;
+
+  @media (max-width: 560px) { grid-column: 1 / -1; }
+}
+
+.mayus { text-transform: uppercase; }
+
+.tipo-persona {
+  display: flex;
+  gap: v.$spacing-sm;
+  flex-wrap: wrap;
+
+  &__opcion {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$spacing-xs;
+    padding: v.$spacing-sm v.$spacing-md;
+    border: 1px solid v.$border-card;
+    border-radius: v.$radius-md;
+    cursor: pointer;
+    color: v.$text-secondary;
+    font-size: v.$font-size-sm;
+
+    &.activa {
+      border-color: v.$primary;
+      color: v.$text-primary;
+      background: v.$primary-light;
+    }
+
+    input { margin: 0; }
+  }
+}

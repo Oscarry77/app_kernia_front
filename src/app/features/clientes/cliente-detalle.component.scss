@@ -127,3 +127,21 @@
   padding: v.$spacing-sm v.$spacing-md;
   font-size: v.$font-size-sm;
 }
+
+.fiscal { max-width: 100%; }
+
+.app__datos--tres {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  .ancho { grid-column: 1 / -1; }
+
+  @media (max-width: 760px) { grid-template-columns: 1fr; }
+}
+
+.subtitulo {
+  margin: v.$spacing-sm 0 0;
+  font-size: v.$font-size-base;
+  color: v.$text-primary;
+}
+
+.alerta--advertencia .btn { margin-left: v.$spacing-sm; }

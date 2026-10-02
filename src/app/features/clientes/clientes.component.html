@@ -13,7 +13,7 @@
         (keyup.enter)="buscar(q.value)"
         (search)="buscar(q.value)"
       />
-      <button class="btn btn--primary" type="button" (click)="nuevo()">+ Nuevo cliente</button>
+      <button class="btn btn--primary" type="button" (click)="mostrarForm.set(true)">+ Nuevo cliente</button>
     </div>
   </div>
 
@@ -32,6 +32,7 @@
         <thead>
           <tr>
             <th>Cliente</th>
+            <th>Tipo</th>
             <th>Slug</th>
             <th>RFC</th>
             <th>Apps contratadas</th>
@@ -41,7 +42,12 @@
         <tbody>
           @for (c of clientes(); track c.id) {
             <tr class="fila-clic" (click)="abrir(c)" tabindex="0" (keyup.enter)="abrir(c)">
-              <td><strong>{{ c.nombre }}</strong></td>
+              <td>
+                <strong>{{ c.nombre }}</strong>
+                @if (c.nombre_comercial) { <div class="texto-tenue">{{ c.nombre_comercial }}</div> }
+                @if (!c.datos_fiscales_completos) { <div class="pendiente">Datos fiscales pendientes</div> }
+              </td>
+              <td>{{ c.tipo_persona === 'moral' ? 'Moral' : c.tipo_persona === 'fisica' ? 'Física' : '—' }}</td>
               <td><code>{{ c.slug }}</code></td>
               <td>{{ c.rfc || '—' }}</td>
               <td>
@@ -78,48 +84,5 @@
 </div>
 
 @if (mostrarForm()) {
-  <div class="modal-overlay" (click)="cerrarForm()">
-    <div class="modal" role="dialog" aria-labelledby="titulo-nuevo-cliente" (click)="$event.stopPropagation()">
-      <div class="modal__header">
-        <h3 id="titulo-nuevo-cliente">Nuevo cliente</h3>
-        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="cerrarForm()">✕</button>
-      </div>
-
-      @if (error()) {
-        <div class="alerta alerta--error">{{ error() }}</div>
-      }
-
-      <form [formGroup]="form" (ngSubmit)="guardar()">
-        <div class="form-grid">
-          <div class="campo campo--full">
-            <label for="cli-nombre">Nombre / razón social <span class="req">*</span></label>
-            <input id="cli-nombre" type="text" formControlName="nombre" (input)="sugerirSlug()" />
-          </div>
-          <div class="campo">
-            <label for="cli-slug">Slug <span class="req">*</span></label>
-            <input id="cli-slug" type="text" formControlName="slug" placeholder="ej. empresa02" />
-            <small class="ayuda">Identifica al cliente en la URL de cada app (<code>/{{ '{app}' }}/{{ form.controls.slug.value || 'slug' }}/login</code>). <b>No se puede cambiar después.</b></small>
-            @if (form.controls.slug.touched && form.controls.slug.invalid) {
-              <small class="texto-error">Minúsculas, números y guiones (3 a 63), sin empezar ni terminar en guion.</small>
-            }
-          </div>
-          <div class="campo">
-            <label for="cli-rfc">RFC contratante</label>
-            <input id="cli-rfc" type="text" formControlName="rfc" placeholder="Informativo; no es llave" />
-          </div>
-          <div class="campo campo--full">
-            <label for="cli-notas">Notas</label>
-            <textarea id="cli-notas" rows="3" formControlName="notas"></textarea>
-          </div>
-        </div>
-
-        <div class="modal__footer">
-          <button class="btn btn--secondary" type="button" (click)="cerrarForm()" [disabled]="guardando()">Cancelar</button>
-          <button class="btn btn--primary" type="submit" [disabled]="guardando()">
-            {{ guardando() ? 'Guardando…' : 'Crear cliente' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <app-cliente-form (guardado)="creado($event)" (cerrado)="mostrarForm.set(false)" />
 }

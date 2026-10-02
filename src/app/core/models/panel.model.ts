@@ -52,15 +52,59 @@ export interface SuscripcionDetalle extends SuscripcionResumen {
   aviso_error: string | null;
 }
 
+export type TipoPersona = 'moral' | 'fisica';
+
+/** (02-oct-2026) Datos según la Constancia de Situación Fiscal. */
+export interface DatosFiscales {
+  tipo_persona: TipoPersona | null;
+  rfc: string | null;
+  razon_social: string | null;
+  regimen_capital: string | null;
+  nombre_comercial: string | null;
+  curp: string | null;
+  nombres: string | null;
+  primer_apellido: string | null;
+  segundo_apellido: string | null;
+  fecha_inicio_operaciones: string | null;
+  estatus_padron: 'activo' | 'suspendido' | null;
+  regimen_fiscal: string | null;
+  regimen_fiscal_nombre?: string | null;
+  codigo_postal: string | null;
+  tipo_vialidad: string | null;
+  nombre_vialidad: string | null;
+  numero_exterior: string | null;
+  numero_interior: string | null;
+  colonia: string | null;
+  localidad: string | null;
+  municipio: string | null;
+  entidad_federativa: string | null;
+  entre_calle: string | null;
+  y_calle: string | null;
+  correo: string | null;
+  telefono_lada: string | null;
+  telefono_numero: string | null;
+}
+
+export interface CatalogoFiscal {
+  regimenes_fiscales: { clave: string; nombre: string; aplica: ('F' | 'M')[] }[];
+  regimenes_capital: { clave: string; nombre: string }[];
+  tipos_vialidad: string[];
+  entidades_federativas: string[];
+}
+
 export interface Cliente<S = SuscripcionResumen> {
   id: number;
   slug: string;
   nombre: string;
+  tipo_persona: TipoPersona | null;
   rfc: string | null;
+  nombre_comercial: string | null;
   estatus: 'activo' | 'suspendido' | 'baja';
-  notas: string | null;
+  datos_fiscales_completos: boolean;
   creado: string | null;
   suscripciones: S[];
+  notas?: string | null;
+  fiscal?: DatosFiscales;
 }
 
 export interface ConPasswordTemporal<T> {

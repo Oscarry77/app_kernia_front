@@ -15,17 +15,57 @@
           <span class="badge" [class.badge--activo]="c.estatus === 'activo'" [class.badge--inactivo]="c.estatus !== 'activo'">{{ etiqueta(c.estatus) }}</span>
         </h2>
         <p class="crud__subtitle">
-          <code>{{ c.slug }}</code> · RFC {{ c.rfc || '—' }} · Alta {{ c.creado || '—' }}
+          {{ c.tipo_persona === 'moral' ? 'Persona moral' : c.tipo_persona === 'fisica' ? 'Persona física' : 'Tipo de persona sin definir' }}
+          · RFC {{ c.rfc || '—' }} · <code>{{ c.slug }}</code> · Alta {{ c.creado || '—' }}
         </p>
         @if (c.notas) { <p class="notas">{{ c.notas }}</p> }
       </div>
       <div class="crud__actions">
-        <button class="btn btn--secondary" type="button" (click)="editarCliente()">Editar datos</button>
+        <button class="btn btn--secondary" type="button" (click)="editarCliente()">
+          {{ c.datos_fiscales_completos ? 'Editar datos' : 'Capturar datos fiscales' }}
+        </button>
         @if (productosDisponibles().length > 0) {
           <button class="btn btn--primary" type="button" (click)="agregarApp()">+ Contratar app</button>
         }
       </div>
     </div>
+
+    @if (!c.datos_fiscales_completos) {
+      <div class="alerta alerta--advertencia">
+        Faltan datos de la Constancia de Situación Fiscal de este cliente.
+        <button class="btn btn--secondary btn--sm" type="button" (click)="editarCliente()">Capturar ahora</button>
+      </div>
+    }
+
+    @if (c.fiscal; as f) {
+      @if (f.tipo_persona) {
+        <section class="app fiscal">
+          <header class="app__header"><h3>Datos fiscales</h3></header>
+          <dl class="app__datos app__datos--tres">
+            @if (f.tipo_persona === 'moral') {
+              <div><dt>Denominación / razón social</dt><dd>{{ f.razon_social || '—' }}</dd></div>
+              <div><dt>Régimen de capital</dt><dd>{{ f.regimen_capital || '—' }}</dd></div>
+              <div><dt>Nombre comercial</dt><dd>{{ f.nombre_comercial || '—' }}</dd></div>
+            } @else {
+              <div><dt>Nombre</dt><dd>{{ c.nombre }}</dd></div>
+              <div><dt>CURP</dt><dd>{{ f.curp || '—' }}</dd></div>
+              <div><dt>Nombre comercial</dt><dd>{{ f.nombre_comercial || '—' }}</dd></div>
+            }
+            <div><dt>Régimen fiscal</dt><dd>{{ f.regimen_fiscal ? f.regimen_fiscal + ' — ' + (f.regimen_fiscal_nombre ?? '') : '—' }}</dd></div>
+            <div><dt>Inicio de operaciones</dt><dd>{{ f.fecha_inicio_operaciones || '—' }}</dd></div>
+            <div><dt>Estatus en el padrón</dt><dd>{{ f.estatus_padron ? (f.estatus_padron | uppercase) : '—' }}</dd></div>
+            <div class="ancho"><dt>Domicilio fiscal</dt><dd>{{ domicilio(f) }}</dd></div>
+            @if (f.entre_calle || f.y_calle) {
+              <div class="ancho"><dt>Entre calles</dt><dd>{{ f.entre_calle || '—' }} y {{ f.y_calle || '—' }}</dd></div>
+            }
+            <div><dt>Correo</dt><dd>{{ f.correo || '—' }}</dd></div>
+            <div><dt>Tel. móvil</dt><dd>{{ f.telefono_lada ? '(' + f.telefono_lada + ') ' + f.telefono_numero : '—' }}</dd></div>
+          </dl>
+        </section>
+      }
+    }
+
+    <h3 class="subtitulo">Servicios contratados</h3>
 
     @if (c.suscripciones.length === 0) {
       <div class="crud__tabla-wrap"><div class="crud__vacio">Este cliente aún no tiene apps contratadas.</div></div>
@@ -166,40 +206,7 @@
 </div>
 
 @if (editando()) {
-  <div class="modal-overlay" (click)="editando.set(false)">
-    <div class="modal" role="dialog" aria-labelledby="titulo-editar-cliente" (click)="$event.stopPropagation()">
-      <div class="modal__header">
-        <h3 id="titulo-editar-cliente">Editar cliente</h3>
-        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="editando.set(false)">✕</button>
-      </div>
-      @if (error()) { <div class="alerta alerta--error">{{ error() }}</div> }
-      <form [formGroup]="formCliente" (ngSubmit)="guardarCliente()">
-        <div class="form-grid">
-          <div class="campo campo--full">
-            <label for="ed-nombre">Nombre / razón social <span class="req">*</span></label>
-            <input id="ed-nombre" type="text" formControlName="nombre" />
-          </div>
-          <div class="campo">
-            <label>Slug</label>
-            <input type="text" [value]="cliente()?.slug" disabled />
-            <small class="ayuda">El slug no se puede cambiar.</small>
-          </div>
-          <div class="campo">
-            <label for="ed-rfc">RFC contratante</label>
-            <input id="ed-rfc" type="text" formControlName="rfc" />
-          </div>
-          <div class="campo campo--full">
-            <label for="ed-notas">Notas</label>
-            <textarea id="ed-notas" rows="3" formControlName="notas"></textarea>
-          </div>
-        </div>
-        <div class="modal__footer">
-          <button class="btn btn--secondary" type="button" (click)="editando.set(false)">Cancelar</button>
-          <button class="btn btn--primary" type="submit" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <app-cliente-form [cliente]="cliente()" (guardado)="clienteGuardado($event)" (cerrado)="editando.set(false)" />
 }
 
 @if (agregando()) {

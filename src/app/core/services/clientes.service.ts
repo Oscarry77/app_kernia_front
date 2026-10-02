@@ -4,7 +4,9 @@ import type { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import type {
+  CatalogoFiscal,
   Cliente,
+  DatosFiscales,
   ConPasswordTemporal,
   ProductoCatalogo,
   SuscripcionDetalle,
@@ -29,11 +31,15 @@ export class ClientesService {
     return this.http.get<{ data: Cliente<SuscripcionDetalle> }>(`${this.api}/clientes/${id}`);
   }
 
-  crear(datos: { slug: string; nombre: string; rfc?: string | null; notas?: string | null }): Observable<{ data: Cliente<SuscripcionDetalle> }> {
+  catalogoFiscal(): Observable<{ data: CatalogoFiscal }> {
+    return this.http.get<{ data: CatalogoFiscal }>(`${this.api}/catalogo/fiscal`);
+  }
+
+  crear(datos: Partial<DatosFiscales> & { slug: string; notas?: string | null }): Observable<{ data: Cliente<SuscripcionDetalle> }> {
     return this.http.post<{ data: Cliente<SuscripcionDetalle> }>(`${this.api}/clientes`, datos);
   }
 
-  actualizar(id: number, datos: { nombre: string; rfc?: string | null; notas?: string | null }): Observable<{ data: Cliente<SuscripcionDetalle> }> {
+  actualizar(id: number, datos: Partial<DatosFiscales> & { notas?: string | null }): Observable<{ data: Cliente<SuscripcionDetalle> }> {
     return this.http.put<{ data: Cliente<SuscripcionDetalle> }>(`${this.api}/clientes/${id}`, datos);
   }
 

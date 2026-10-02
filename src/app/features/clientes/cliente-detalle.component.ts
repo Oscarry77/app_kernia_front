@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 
 import { ClientesService } from '../../core/services/clientes.service';
 import type { Cliente, ProductoCatalogo, SuscripcionDetalle } from '../../core/models/panel.model';
+import { ClienteFormComponent } from './cliente-form.component';
 import { COLOR_PRIMARIO, etiquetaEstatus, etiquetaLimite, mensajeError, mostrarPasswordUnaVez } from './panel-ui';
 
 /**
@@ -19,7 +20,7 @@ import { COLOR_PRIMARIO, etiquetaEstatus, etiquetaLimite, mensajeError, mostrarP
 @Component({
   selector: 'app-cliente-detalle',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, ClienteFormComponent],
   templateUrl: './cliente-detalle.component.html',
   styleUrls: ['../shared/crud-page.scss', './clientes.component.scss', './cliente-detalle.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,12 +44,6 @@ export class ClienteDetalleComponent implements OnInit {
 
   readonly etiqueta = etiquetaEstatus;
   readonly etiquetaLimite = etiquetaLimite;
-
-  formCliente = this.fb.group({
-    nombre: ['', [Validators.required, Validators.maxLength(255)]],
-    rfc: ['', [Validators.maxLength(20)]],
-    notas: [''],
-  });
 
   formApp = this.fb.group({
     producto: ['', Validators.required],
@@ -112,21 +107,27 @@ export class ClienteDetalleComponent implements OnInit {
   // ── Cliente ───────────────────────────────────────────────────────────
 
   editarCliente(): void {
-    const c = this.cliente();
-    if (!c) return;
-    this.formCliente.reset({ nombre: c.nombre, rfc: c.rfc ?? '', notas: c.notas ?? '' });
-    this.error.set(null);
     this.editando.set(true);
   }
 
-  guardarCliente(): void {
-    if (this.formCliente.invalid || this.guardando()) return;
-    this.guardando.set(true);
-    const v = this.formCliente.getRawValue();
-    this.service.actualizar(this.id, { nombre: v.nombre!, rfc: v.rfc || null, notas: v.notas || null }).subscribe({
-      next: r => { this.cliente.set(r.data); this.guardando.set(false); this.editando.set(false); },
-      error: (err: HttpErrorResponse) => { this.guardando.set(false); this.error.set(mensajeError(err, 'No se pudo guardar.')); },
-    });
+  clienteGuardado(c: Cliente<SuscripcionDetalle>): void {
+    this.cliente.set(c);
+    this.editando.set(false);
+  }
+
+  /** Domicilio fiscal en una línea, como en la Constancia. */
+  domicilio(f: NonNullable<Cliente['fiscal']>): string {
+    const partes = [
+      [f.tipo_vialidad, f.nombre_vialidad].filter(Boolean).join(' '),
+      f.numero_exterior ? `NO. EXT. ${f.numero_exterior}` : null,
+      f.numero_interior ? `NO. INT. ${f.numero_interior}` : null,
+      f.colonia ? `COL. ${f.colonia}` : null,
+      f.localidad,
+      f.municipio,
+      f.entidad_federativa,
+      f.codigo_postal ? `C.P. ${f.codigo_postal}` : null,
+    ];
+    return partes.filter(Boolean).join(', ') || '—';
   }
 
   // ── Alta de app ───────────────────────────────────────────────────────

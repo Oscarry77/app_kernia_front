@@ -1,0 +1,205 @@
+<div class="modal-overlay" (click)="cerrar()">
+  <div class="modal modal--amplio" role="dialog" aria-labelledby="titulo-cliente-form" (click)="$event.stopPropagation()">
+    <div class="modal__header">
+      <h3 id="titulo-cliente-form">{{ esAlta ? 'Nuevo cliente' : 'Datos del cliente' }}</h3>
+      <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="cerrar()">✕</button>
+    </div>
+
+    @if (error()) { <div class="alerta alerta--error" role="alert">{{ error() }}</div> }
+
+    <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+
+      <fieldset class="seccion">
+        <legend>Tipo de cliente</legend>
+        <div class="tipo-persona" role="radiogroup" aria-label="Tipo de persona">
+          <label class="tipo-persona__opcion" [class.activa]="tipo() === 'moral'">
+            <input type="radio" formControlName="tipo_persona" value="moral" /> Persona moral
+          </label>
+          <label class="tipo-persona__opcion" [class.activa]="tipo() === 'fisica'">
+            <input type="radio" formControlName="tipo_persona" value="fisica" /> Persona física
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="seccion">
+        <legend>Datos del contribuyente</legend>
+        <div class="form-grid">
+          <div class="campo">
+            <label for="f-rfc">RFC <span class="req">*</span></label>
+            <input id="f-rfc" type="text" formControlName="rfc" class="mayus" [attr.maxlength]="tipo() === 'moral' ? 12 : 13"
+                   [placeholder]="tipo() === 'moral' ? '12 caracteres' : '13 caracteres'" />
+            @if (errorDe('rfc'); as e) { <small class="texto-error">{{ e }}</small> }
+          </div>
+
+          @if (tipo() === 'moral') {
+            <div class="campo campo--doble">
+              <label for="f-razon">Denominación / razón social <span class="req">*</span></label>
+              <input id="f-razon" type="text" formControlName="razon_social" class="mayus" (input)="sugerirSlug()"
+                     placeholder="Como en la Constancia, sin el régimen de capital" />
+              @if (errorDe('razon_social'); as e) { <small class="texto-error">{{ e }}</small> }
+            </div>
+            <div class="campo">
+              <label for="f-capital">Régimen de capital</label>
+              <select id="f-capital" formControlName="regimen_capital">
+                <option value="">— Sin régimen de capital —</option>
+                @for (r of catalogo()?.regimenes_capital ?? []; track r.clave) {
+                  <option [value]="r.clave">{{ r.clave }} — {{ r.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div class="campo campo--doble">
+              <label for="f-comercial">Nombre comercial</label>
+              <input id="f-comercial" type="text" formControlName="nombre_comercial" class="mayus" (input)="sugerirSlug()" />
+            </div>
+          } @else {
+            <div class="campo">
+              <label for="f-curp">CURP <span class="req">*</span></label>
+              <input id="f-curp" type="text" formControlName="curp" class="mayus" maxlength="18" />
+              @if (errorDe('curp'); as e) { <small class="texto-error">{{ e }}</small> }
+            </div>
+            <div class="campo">
+              <label for="f-nombres">Nombre(s) <span class="req">*</span></label>
+              <input id="f-nombres" type="text" formControlName="nombres" class="mayus" (input)="sugerirSlug()" />
+              @if (errorDe('nombres'); as e) { <small class="texto-error">{{ e }}</small> }
+            </div>
+            <div class="campo">
+              <label for="f-ap1">Primer apellido <span class="req">*</span></label>
+              <input id="f-ap1" type="text" formControlName="primer_apellido" class="mayus" (input)="sugerirSlug()" />
+              @if (errorDe('primer_apellido'); as e) { <small class="texto-error">{{ e }}</small> }
+            </div>
+            <div class="campo">
+              <label for="f-ap2">Segundo apellido</label>
+              <input id="f-ap2" type="text" formControlName="segundo_apellido" class="mayus" />
+            </div>
+          }
+
+          <div class="campo">
+            <label for="f-inicio">Fecha de inicio de operaciones</label>
+            <input id="f-inicio" type="date" formControlName="fecha_inicio_operaciones" [max]="hoy" />
+            @if (errorDe('fecha_inicio_operaciones'); as e) { <small class="texto-error">{{ e }}</small> }
+          </div>
+          <div class="campo">
+            <label for="f-padron">Estatus en el padrón (SAT)</label>
+            <select id="f-padron" formControlName="estatus_padron">
+              <option value="activo">ACTIVO</option>
+              <option value="suspendido">SUSPENDIDO</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="seccion">
+        <legend>Domicilio del contribuyente</legend>
+        <div class="form-grid">
+          <div class="campo">
+            <label for="f-cp">Código postal <span class="req">*</span></label>
+            <input id="f-cp" type="text" inputmode="numeric" maxlength="5" formControlName="codigo_postal" />
+            @if (errorDe('codigo_postal'); as e) { <small class="texto-error">{{ e }}</small> }
+          </div>
+          <div class="campo">
+            <label for="f-tvial">Tipo de vialidad</label>
+            <select id="f-tvial" formControlName="tipo_vialidad">
+              <option value="">—</option>
+              @for (t of catalogo()?.tipos_vialidad ?? []; track t) { <option [value]="t">{{ t }}</option> }
+            </select>
+          </div>
+          <div class="campo campo--doble">
+            <label for="f-vial">Nombre de vialidad</label>
+            <input id="f-vial" type="text" formControlName="nombre_vialidad" class="mayus" />
+          </div>
+          <div class="campo">
+            <label for="f-next">Número exterior</label>
+            <input id="f-next" type="text" formControlName="numero_exterior" class="mayus" />
+          </div>
+          <div class="campo">
+            <label for="f-nint">Número interior</label>
+            <input id="f-nint" type="text" formControlName="numero_interior" class="mayus" />
+          </div>
+          <div class="campo campo--doble">
+            <label for="f-col">Nombre de la colonia</label>
+            <input id="f-col" type="text" formControlName="colonia" class="mayus" />
+          </div>
+          <div class="campo campo--doble">
+            <label for="f-loc">Nombre de la localidad</label>
+            <input id="f-loc" type="text" formControlName="localidad" class="mayus" />
+          </div>
+          <div class="campo campo--doble">
+            <label for="f-mun">Municipio o demarcación territorial</label>
+            <input id="f-mun" type="text" formControlName="municipio" class="mayus" />
+          </div>
+          <div class="campo campo--doble">
+            <label for="f-ent">Entidad federativa <span class="req">*</span></label>
+            <select id="f-ent" formControlName="entidad_federativa">
+              <option value="">—</option>
+              @for (e of catalogo()?.entidades_federativas ?? []; track e) { <option [value]="e">{{ e }}</option> }
+            </select>
+            @if (errorDe('entidad_federativa'); as e) { <small class="texto-error">{{ e }}</small> }
+          </div>
+          <div class="campo campo--doble">
+            <label for="f-entre">Entre calle</label>
+            <input id="f-entre" type="text" formControlName="entre_calle" class="mayus" />
+          </div>
+          <div class="campo campo--doble">
+            <label for="f-ycalle">Y calle</label>
+            <input id="f-ycalle" type="text" formControlName="y_calle" class="mayus" />
+          </div>
+          <div class="campo campo--doble">
+            <label for="f-correo">Correo electrónico <span class="req">*</span></label>
+            <input id="f-correo" type="email" formControlName="correo" />
+            @if (errorDe('correo'); as e) { <small class="texto-error">{{ e }}</small> }
+          </div>
+          <div class="campo">
+            <label for="f-lada">Tel. móvil — lada</label>
+            <input id="f-lada" type="text" inputmode="numeric" maxlength="3" formControlName="telefono_lada" placeholder="81" />
+            @if (errorDe('telefono_lada'); as e) { <small class="texto-error">{{ e }}</small> }
+          </div>
+          <div class="campo">
+            <label for="f-tel">Número</label>
+            <input id="f-tel" type="text" inputmode="numeric" maxlength="8" formControlName="telefono_numero" />
+            @if (errorDe('telefono_numero'); as e) { <small class="texto-error">{{ e }}</small> }
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="seccion">
+        <legend>Régimen</legend>
+        <div class="form-grid">
+          <div class="campo campo--full">
+            <label for="f-regimen">Tipo de régimen <span class="req">*</span></label>
+            <select id="f-regimen" formControlName="regimen_fiscal">
+              <option value="">— Selecciona —</option>
+              @for (r of regimenes(); track r.clave) { <option [value]="r.clave">{{ r.clave }} — {{ r.nombre }}</option> }
+            </select>
+            @if (errorDe('regimen_fiscal'); as e) { <small class="texto-error">{{ e }}</small> }
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="seccion">
+        <legend>Kernia</legend>
+        <div class="form-grid">
+          <div class="campo">
+            <label for="f-slug">Slug @if (esAlta) { <span class="req">*</span> }</label>
+            <input id="f-slug" type="text" formControlName="slug" placeholder="ej. empresa02" />
+            <small class="ayuda">
+              Identifica al cliente en la URL de cada app.
+              @if (esAlta) { <b>No se puede cambiar después.</b> } @else { No se puede cambiar. }
+            </small>
+            @if (errorDe('slug'); as e) { <small class="texto-error">{{ e }}</small> }
+          </div>
+          <div class="campo campo--full">
+            <label for="f-notas">Notas internas</label>
+            <textarea id="f-notas" rows="2" formControlName="notas"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="modal__footer">
+        <button class="btn btn--secondary" type="button" (click)="cerrar()" [disabled]="guardando()">Cancelar</button>
+        <button class="btn btn--primary" type="submit" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : (esAlta ? 'Crear cliente' : 'Guardar') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

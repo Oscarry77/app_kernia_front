@@ -46,3 +46,9 @@ code {
   font-size: v.$font-size-xs;
   color: v.$text-secondary;
 }
+
+.pendiente {
+  margin-top: 2px;
+  font-size: v.$font-size-xs;
+  color: v.$warning;
+}
