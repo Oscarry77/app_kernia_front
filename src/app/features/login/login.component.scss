@@ -1,0 +1,236 @@
+@use '../../styles/comercializa-variables' as v;
+
+.login-shell {
+  @include v.flex-center;
+  min-height: 100vh;
+  width: 100%;
+  background-color: v.$bg-app;
+  position: relative;
+  overflow: hidden;
+  font-family: v.$font-family;
+}
+
+.login-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  &__grid {
+    @include v.grid-overlay;
+    position: absolute;
+    inset: 0;
+  }
+}
+
+.login-card {
+  @include v.card;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  margin: v.$spacing-lg;
+  padding: v.$spacing-2xl v.$spacing-xl;
+  display: flex;
+  flex-direction: column;
+  gap: v.$spacing-lg;
+
+  &__header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: v.$spacing-sm;
+  }
+
+  &__logo {
+    width: 56px;
+    height: 56px;
+    @include v.flex-center;
+    background: v.$primary-light;
+    border-radius: v.$radius-md;
+  }
+
+  &__app-name {
+    font-size: v.$font-size-3xl;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-primary;
+    letter-spacing: 0.1em;
+    margin: 0;
+  }
+
+  &__subtitle {
+    font-size: v.$font-size-sm;
+    color: v.$text-secondary;
+    font-weight: v.$font-weight-medium;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: v.$spacing-md;
+  }
+
+  // (02-oct-2026) Enlace "Solicitar cambio de contraseña".
+  &__forgot {
+    align-self: center;
+    background: none;
+    border: none;
+    padding: v.$spacing-xs;
+    cursor: pointer;
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-medium;
+    color: v.$primary;
+
+    &:hover { text-decoration: underline; }
+    &:focus-visible { outline: 2px solid v.$primary; outline-offset: 2px; border-radius: 4px; }
+  }
+
+  &__footer {
+    text-align: center;
+    font-size: v.$font-size-xs;
+    color: v.$text-muted;
+    display: flex;
+    gap: v.$spacing-xs;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    a {
+      color: v.$primary;
+      text-decoration: none;
+      font-weight: v.$font-weight-medium;
+
+      &:hover { text-decoration: underline; }
+    }
+  }
+}
+
+.form-error-banner {
+  display: flex;
+  align-items: center;
+  gap: v.$spacing-sm;
+  padding: v.$spacing-sm v.$spacing-md;
+  border-radius: v.$radius-sm;
+  background: rgba(v.$danger, 0.08);
+  border: 1px solid rgba(v.$danger, 0.25);
+  color: v.$danger;
+  font-size: v.$font-size-sm;
+  font-weight: v.$font-weight-medium;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__label {
+    font-size: v.$font-size-sm;
+    font-weight: v.$font-weight-semibold;
+    color: v.$text-primary;
+  }
+
+  &__input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  &__icon {
+    position: absolute;
+    left: 14px;
+    color: v.$text-muted;
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+
+  &__input {
+    width: 100%;
+    padding: 11px 44px 11px 44px;
+    border: 1.5px solid v.$border-card;
+    border-radius: v.$radius-md;
+    font-size: v.$font-size-base;
+    font-family: v.$font-family;
+    color: v.$text-primary;
+    background: v.$bg-app;
+    transition:
+      border-color v.$transition-fast,
+      box-shadow v.$transition-fast;
+    outline: none;
+
+    &::placeholder { color: v.$text-muted; }
+
+    &:focus {
+      border-color: v.$primary;
+      box-shadow: 0 0 0 3px v.$primary-light;
+    }
+  }
+
+  &__toggle-pass {
+    position: absolute;
+    right: 14px;
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: v.$text-muted;
+    padding: 0;
+    transition: color v.$transition-fast;
+
+    &:hover { color: v.$primary; }
+  }
+
+  &__error {
+    font-size: v.$font-size-xs;
+    color: v.$danger;
+    font-weight: v.$font-weight-medium;
+  }
+
+  &--error {
+    .form-field__input {
+      border-color: v.$danger;
+
+      &:focus { box-shadow: 0 0 0 3px rgba(v.$danger, 0.12); }
+    }
+  }
+}
+
+.btn-login {
+  @include v.btn-primary;
+  width: 100%;
+  padding: 13px v.$spacing-lg;
+  font-size: v.$font-size-base;
+  border-radius: v.$radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: v.$spacing-sm;
+  margin-top: v.$spacing-xs;
+
+  &--loading {
+    opacity: 0.85;
+    pointer-events: none;
+  }
+
+  &__spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: v.$spacing-xl v.$spacing-md;
+    margin: v.$spacing-md;
+  }
+}

@@ -61,6 +61,11 @@ export class AuthService {
       );
   }
 
+  /** (02-oct-2026) "Olvidé mi contraseña": Kernia envía una nueva al correo del operador. */
+  solicitarPassword(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${environment.apiUrl}/auth/password/solicitar`, { email });
+  }
+
   getToken(): string | null {
     return this._token();
   }
