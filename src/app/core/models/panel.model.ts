@@ -8,6 +8,10 @@ export interface PlanCatalogo {
   nombre: string;
   modulos: string[] | null;
   limites: Record<string, number | null> | null;
+  orden?: number;
+  activo?: boolean;
+  /** Solo en el catálogo completo: clientes que tienen este plan. */
+  clientes?: number;
 }
 
 export interface ExtraCatalogo {
@@ -15,14 +19,24 @@ export interface ExtraCatalogo {
   nombre: string;
   limite: string;
   incremento: number;
+  activo?: boolean;
+}
+
+export interface ModuloCatalogo {
+  clave: string;
+  nombre: string;
+  requiere: string[] | null;
 }
 
 export interface ProductoCatalogo {
   id: number;
   slug: string;
   nombre: string;
+  nombre_corto: string | null;
+  descripcion: string | null;
+  permite_ws_cntpaq: boolean;
   modo_datos: 'dedicada' | 'compartida';
-  modulos: { clave: string; nombre: string }[];
+  modulos: ModuloCatalogo[];
   planes: PlanCatalogo[];
   extras: ExtraCatalogo[];
 }
@@ -40,6 +54,9 @@ export interface SuscripcionResumen {
 export interface SuscripcionDetalle extends SuscripcionResumen {
   estatus_almacenado: EstatusSuscripcion;
   modo_datos: string;
+  db_driver: string | null;
+  permite_ws_cntpaq: boolean;
+  ws_cntpaq_habilitado: boolean;
   ref_externa: string | null;
   admin_email: string | null;
   modulos: string[] | null;

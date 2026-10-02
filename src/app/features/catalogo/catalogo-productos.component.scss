@@ -1,0 +1,100 @@
+@use '../../styles/comercializa-variables' as v;
+
+.producto {
+  @include v.card;
+  padding: v.$spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: v.$spacing-md;
+
+  &__header {
+    @include v.flex-between;
+    align-items: flex-start;
+    gap: v.$spacing-md;
+
+    h3 { margin: 0 0 v.$spacing-xs; font-size: v.$font-size-lg; color: v.$text-primary; }
+    p { margin: 0 0 v.$spacing-sm; }
+  }
+}
+
+.corto {
+  margin-left: v.$spacing-xs;
+  padding: 2px 8px;
+  border-radius: v.$radius-sm;
+  background: v.$primary-light;
+  color: v.$primary;
+  font-size: v.$font-size-xs;
+  font-weight: v.$font-weight-bold;
+  vertical-align: middle;
+}
+
+.bloque {
+  h4 {
+    margin: 0 0 v.$spacing-xs;
+    font-size: v.$font-size-xs;
+    font-weight: v.$font-weight-semibold;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__titulo {
+    @include v.flex-between;
+    margin-bottom: v.$spacing-xs;
+
+    h4 { margin: 0; }
+  }
+}
+
+tr.inactivo td { opacity: 0.55; }
+
+.seccion {
+  border: 1px solid v.$border-card;
+  border-radius: v.$radius-md;
+  padding: v.$spacing-md;
+  margin: v.$spacing-md 0 0;
+
+  legend {
+    padding: 0 v.$spacing-xs;
+    font-size: v.$font-size-xs;
+    color: v.$text-muted;
+    text-transform: uppercase;
+  }
+}
+
+.opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$spacing-sm v.$spacing-lg;
+}
+
+.opcion {
+  display: inline-flex;
+  align-items: center;
+  gap: v.$spacing-xs;
+  font-size: v.$font-size-sm;
+  color: v.$text-secondary;
+  cursor: pointer;
+
+  input { margin: 0; }
+}
+
+.limite {
+  display: grid;
+  grid-template-columns: 160px 120px auto;
+  align-items: center;
+  gap: v.$spacing-sm;
+  margin-bottom: v.$spacing-xs;
+
+  @media (max-width: 520px) { grid-template-columns: 1fr; }
+}
+
+.alerta--advertencia {
+  background: rgba(232, 163, 61, 0.12);
+  border: 1px solid rgba(232, 163, 61, 0.35);
+  color: #f0be74;
+  border-radius: v.$radius-sm;
+  padding: v.$spacing-sm v.$spacing-md;
+  font-size: v.$font-size-sm;
+  margin-bottom: v.$spacing-md;
+}

@@ -67,6 +67,10 @@ export class ClientesService {
     return this.http.post<ConPasswordTemporal<SuscripcionDetalle>>(`${this.api}/suscripciones/${id}/reintentar`, { admin_nombre: adminNombre });
   }
 
+  wsCntpaq(id: number, habilitado: boolean): Observable<{ data: SuscripcionDetalle }> {
+    return this.http.patch<{ data: SuscripcionDetalle }>(`${this.api}/suscripciones/${id}/ws-cntpaq`, { habilitado });
+  }
+
   metricas(id: number): Observable<{ data: Record<string, unknown> }> {
     return this.http.get<{ data: Record<string, unknown> }>(`${this.api}/suscripciones/${id}/metricas`);
   }

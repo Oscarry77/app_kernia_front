@@ -116,6 +116,24 @@
               <dt>Administrador</dt>
               <dd>{{ s.admin_email || '—' }}</dd>
             </div>
+            @if (s.modo_datos === 'dedicada') {
+              <div>
+                <dt>Motor de base de datos</dt>
+                <dd>{{ (s.db_driver || 'mysql') === 'mysql' ? 'MySQL' : s.db_driver }}</dd>
+              </div>
+            }
+            @if (s.permite_ws_cntpaq) {
+              <div>
+                <dt>WS-CNTPAQi.Net</dt>
+                <dd>
+                  <label class="interruptor">
+                    <input type="checkbox" [checked]="s.ws_cntpaq_habilitado" (change)="cambiarWs(s, $any($event.target).checked)"
+                           [disabled]="ocupado() === s.id" />
+                    {{ s.ws_cntpaq_habilitado ? 'Habilitado' : 'No habilitado' }}
+                  </label>
+                </dd>
+              </div>
+            }
             <div>
               <dt>Contratación</dt>
               <dd>{{ s.fecha_contratacion || '—' }}</dd>
@@ -235,6 +253,13 @@
                   <option [value]="p.codigo">{{ p.nombre }}</option>
                 }
               </select>
+            </div>
+          }
+          @if (producto(formApp.controls.producto.value ?? '')?.modo_datos === 'dedicada') {
+            <div class="campo">
+              <label for="app-motor">Motor de base de datos</label>
+              <select id="app-motor" disabled><option>MySQL</option></select>
+              <small class="ayuda">Por ahora solo MySQL.</small>
             </div>
           }
           <div class="campo">

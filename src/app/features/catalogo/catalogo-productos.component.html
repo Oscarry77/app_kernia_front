@@ -1,0 +1,224 @@
+<div class="crud">
+  <div class="crud__header">
+    <div>
+      <h2 class="crud__title">Productos y planes</h2>
+      <p class="crud__subtitle">Las apps que renta Kernia, sus módulos, planes y extras. Cambiar un plan afecta a todos los clientes que lo tienen.</p>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="crud__tabla-wrap"><div class="crud__vacio">Cargando...</div></div>
+  } @else if (errorCarga()) {
+    <div class="crud__tabla-wrap"><div class="crud__vacio texto-error">{{ errorCarga() }}</div></div>
+  }
+
+  @for (p of productos(); track p.slug) {
+    <section class="producto">
+      <header class="producto__header">
+        <div>
+          <h3>{{ p.nombre }} <span class="corto">{{ p.nombre_corto || p.slug }}</span></h3>
+          <p class="texto-tenue">{{ p.descripcion || 'Sin descripción.' }}</p>
+          <div class="chips">
+            <span class="chip">{{ p.modo_datos === 'dedicada' ? 'Base dedicada (la crea Kernia)' : 'Base gestionada por la app' }}</span>
+            <span class="chip" [class.chip--activo]="p.permite_ws_cntpaq">WS-CNTPAQi.Net: {{ p.permite_ws_cntpaq ? 'sí' : 'no aplica' }}</span>
+          </div>
+        </div>
+        <button class="btn btn--secondary btn--sm" type="button" (click)="editarProducto(p)">Editar app</button>
+      </header>
+
+      @if (p.modulos.length) {
+        <div class="bloque">
+          <h4>Módulos</h4>
+          <div class="chips">
+            @for (m of p.modulos; track m.clave) {
+              <span class="chip" [title]="requiereTexto(p, m) ?? ''">
+                {{ m.nombre }}@if (m.requiere?.length) { <span class="texto-tenue"> · requiere {{ nombreModulo(p, m.requiere![0]) }}</span> }
+              </span>
+            }
+          </div>
+          <small class="ayuda">Los módulos los define el desarrollo de cada app; aquí se combinan en planes.</small>
+        </div>
+      }
+
+      <div class="bloque">
+        <div class="bloque__titulo">
+          <h4>Planes</h4>
+          <button class="btn btn--secondary btn--sm" type="button" (click)="nuevoPlan(p)">+ Nuevo plan</button>
+        </div>
+        @if (p.planes.length === 0) {
+          <p class="texto-tenue">Esta app no tiene catálogo de planes.</p>
+        } @else {
+          <table class="crud__tabla">
+            <thead>
+              <tr><th>Plan</th>@if (p.modulos.length) { <th>Módulos</th> }<th>Límites</th><th>Clientes</th><th>Estado</th><th></th></tr>
+            </thead>
+            <tbody>
+              @for (pl of p.planes; track pl.codigo) {
+                <tr [class.inactivo]="!pl.activo">
+                  <td><strong>{{ pl.nombre }}</strong><div class="texto-tenue"><code>{{ pl.codigo }}</code></div></td>
+                  @if (p.modulos.length) {
+                    <td><div class="chips">@for (m of pl.modulos ?? []; track m) { <span class="chip chip--activo">{{ nombreModulo(p, m) }}</span> }</div></td>
+                  }
+                  <td>
+                    <div class="chips">
+                      @for (l of limitesDe(pl); track l.clave) { <span class="chip">{{ etiquetaLimite(l.clave) }}: <b>{{ l.valor ?? 'Sin límite' }}</b></span> }
+                    </div>
+                  </td>
+                  <td>{{ pl.clientes ?? 0 }}</td>
+                  <td><span class="badge" [class.badge--activo]="pl.activo" [class.badge--inactivo]="!pl.activo">{{ pl.activo ? 'Activo' : 'Inactivo' }}</span></td>
+                  <td><button class="btn btn--secondary btn--sm" type="button" (click)="editarPlan(p, pl)">Editar</button></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+
+      <div class="bloque">
+        <div class="bloque__titulo">
+          <h4>Extras</h4>
+          <button class="btn btn--secondary btn--sm" type="button" (click)="nuevoExtra(p)">+ Nuevo extra</button>
+        </div>
+        @if (p.extras.length === 0) {
+          <p class="texto-tenue">Sin extras.</p>
+        } @else {
+          <table class="crud__tabla">
+            <thead><tr><th>Extra</th><th>Suma a</th><th>Por unidad</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              @for (x of p.extras; track x.codigo) {
+                <tr [class.inactivo]="!x.activo">
+                  <td><strong>{{ x.nombre }}</strong><div class="texto-tenue"><code>{{ x.codigo }}</code></div></td>
+                  <td>{{ etiquetaLimite(x.limite) }}</td>
+                  <td>+{{ x.incremento }}</td>
+                  <td><span class="badge" [class.badge--activo]="x.activo" [class.badge--inactivo]="!x.activo">{{ x.activo ? 'Activo' : 'Inactivo' }}</span></td>
+                  <td><button class="btn btn--secondary btn--sm" type="button" (click)="editarExtra(p, x)">Editar</button></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </section>
+  }
+</div>
+
+<!-- App -->
+@if (editandoProducto(); as e) {
+  <div class="modal-overlay" (click)="editandoProducto.set(null)">
+    <div class="modal" role="dialog" aria-labelledby="t-app" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3 id="t-app">Editar app</h3>
+        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="editandoProducto.set(null)">✕</button>
+      </div>
+      @if (error()) { <div class="alerta alerta--error">{{ error() }}</div> }
+      <div class="form-grid">
+        <div class="campo campo--full"><label for="a-nombre">Nombre de la aplicación <span class="req">*</span></label>
+          <input id="a-nombre" type="text" [(ngModel)]="e.nombre" /></div>
+        <div class="campo"><label for="a-corto">Nombre corto <span class="req">*</span></label>
+          <input id="a-corto" type="text" maxlength="20" [(ngModel)]="e.nombre_corto" style="text-transform: uppercase" /></div>
+        <div class="campo"><label for="a-ws">Usa WS-CNTPAQi.Net</label>
+          <select id="a-ws" [(ngModel)]="e.permite_ws_cntpaq"><option [ngValue]="true">Sí</option><option [ngValue]="false">No aplica</option></select></div>
+        <div class="campo campo--full"><label for="a-desc">Descripción general</label>
+          <textarea id="a-desc" rows="3" [(ngModel)]="e.descripcion"></textarea></div>
+      </div>
+      <p class="ayuda">El identificador (<code>{{ e.slug }}</code>), la URL interna y el token de la app no se cambian desde aquí.</p>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" type="button" (click)="editandoProducto.set(null)">Cancelar</button>
+        <button class="btn btn--primary" type="button" (click)="guardarProducto()" [disabled]="guardando() || !e.nombre || !e.nombre_corto">Guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Plan -->
+@if (editandoPlan(); as e) {
+  <div class="modal-overlay" (click)="editandoPlan.set(null)">
+    <div class="modal" role="dialog" aria-labelledby="t-plan" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3 id="t-plan">{{ e.esNuevo ? 'Nuevo plan' : 'Editar plan' }} — {{ e.producto.nombre }}</h3>
+        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="editandoPlan.set(null)">✕</button>
+      </div>
+      @if (error()) { <div class="alerta alerta--error">{{ error() }}</div> }
+      @if (!e.esNuevo && e.clientes > 0) {
+        <div class="alerta alerta--advertencia">{{ e.clientes }} cliente(s) tienen este plan: los cambios les aplican de inmediato.</div>
+      }
+      <div class="form-grid">
+        <div class="campo"><label for="p-codigo">Código <span class="req">*</span></label>
+          <input id="p-codigo" type="text" [(ngModel)]="e.codigo" [disabled]="!e.esNuevo" placeholder="ej. empresarial" />
+          <small class="ayuda">{{ e.esNuevo ? 'Minúsculas y guion bajo. No se puede cambiar después.' : 'No se puede cambiar.' }}</small></div>
+        <div class="campo"><label for="p-nombre">Nombre <span class="req">*</span></label>
+          <input id="p-nombre" type="text" [(ngModel)]="e.nombre" /></div>
+        <div class="campo"><label for="p-orden">Orden</label>
+          <input id="p-orden" type="number" min="0" [(ngModel)]="e.orden" /></div>
+        @if (!e.esNuevo) {
+          <div class="campo"><label for="p-activo">Estado</label>
+            <select id="p-activo" [(ngModel)]="e.activo"><option [ngValue]="true">Activo</option><option [ngValue]="false">Inactivo (ya no se asigna)</option></select></div>
+        }
+      </div>
+
+      @if (e.producto.modulos.length) {
+        <fieldset class="seccion">
+          <legend>Módulos incluidos</legend>
+          <div class="opciones">
+            @for (m of e.producto.modulos; track m.clave) {
+              <label class="opcion">
+                <input type="checkbox" [checked]="e.modulos.has(m.clave)" (change)="alternarModulo(e, m.clave, $any($event.target).checked)" />
+                {{ m.nombre }} @if (m.requiere?.length) { <span class="texto-tenue">(requiere {{ nombreModulo(e.producto, m.requiere![0]) }})</span> }
+              </label>
+            }
+          </div>
+        </fieldset>
+      }
+
+      <fieldset class="seccion">
+        <legend>Límites</legend>
+        @for (l of e.limites | keyvalue; track l.key) {
+          <div class="limite">
+            <label class="opcion"><input type="checkbox" [(ngModel)]="l.value.usar" /> {{ etiquetaLimite(l.key) }}</label>
+            @if (l.value.usar) {
+              <input type="number" min="0" [(ngModel)]="l.value.valor" [disabled]="l.value.sinLimite" aria-label="Valor del límite" />
+              <label class="opcion"><input type="checkbox" [(ngModel)]="l.value.sinLimite" /> Sin límite</label>
+            }
+          </div>
+        }
+      </fieldset>
+
+      <div class="modal__footer">
+        <button class="btn btn--secondary" type="button" (click)="editandoPlan.set(null)">Cancelar</button>
+        <button class="btn btn--primary" type="button" (click)="guardarPlan()" [disabled]="guardando() || !e.codigo || !e.nombre">Guardar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Extra -->
+@if (editandoExtra(); as e) {
+  <div class="modal-overlay" (click)="editandoExtra.set(null)">
+    <div class="modal" role="dialog" aria-labelledby="t-extra" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3 id="t-extra">{{ e.esNuevo ? 'Nuevo extra' : 'Editar extra' }} — {{ e.producto.nombre }}</h3>
+        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="editandoExtra.set(null)">✕</button>
+      </div>
+      @if (error()) { <div class="alerta alerta--error">{{ error() }}</div> }
+      <div class="form-grid">
+        <div class="campo"><label for="x-codigo">Código <span class="req">*</span></label>
+          <input id="x-codigo" type="text" [(ngModel)]="e.codigo" [disabled]="!e.esNuevo" placeholder="ej. usuario_adicional" /></div>
+        <div class="campo"><label for="x-nombre">Nombre <span class="req">*</span></label>
+          <input id="x-nombre" type="text" [(ngModel)]="e.nombre" /></div>
+        <div class="campo"><label for="x-limite">Suma a</label>
+          <select id="x-limite" [(ngModel)]="e.limite">@for (l of limitesDisponibles(); track l) { <option [value]="l">{{ etiquetaLimite(l) }}</option> }</select></div>
+        <div class="campo"><label for="x-inc">Cantidad por unidad</label>
+          <input id="x-inc" type="number" min="1" [(ngModel)]="e.incremento" /></div>
+        @if (!e.esNuevo) {
+          <div class="campo"><label for="x-activo">Estado</label>
+            <select id="x-activo" [(ngModel)]="e.activo"><option [ngValue]="true">Activo</option><option [ngValue]="false">Inactivo (ya no se vende)</option></select></div>
+        }
+      </div>
+      <p class="ayuda">Desactivar un extra impide venderlo de nuevo; lo ya contratado por los clientes se respeta.</p>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" type="button" (click)="editandoExtra.set(null)">Cancelar</button>
+        <button class="btn btn--primary" type="button" (click)="guardarExtra()" [disabled]="guardando() || !e.codigo || !e.nombre || !e.incremento">Guardar</button>
+      </div>
+    </div>
+  </div>
+}

@@ -145,3 +145,12 @@
 }
 
 .alerta--advertencia .btn { margin-left: v.$spacing-sm; }
+
+.interruptor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+
+  input { margin: 0; }
+}

@@ -25,6 +25,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/clientes/cliente-detalle.component').then(m => m.ClienteDetalleComponent),
       },
+      {
+        path: 'catalogo/productos',
+        loadComponent: () =>
+          import('./features/catalogo/catalogo-productos.component').then(m => m.CatalogoProductosComponent),
+      },
       // Modelo heredado, solo consulta.
       {
         path: 'tenants',

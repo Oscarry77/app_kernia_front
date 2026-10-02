@@ -283,6 +283,18 @@ export class ClienteDetalleComponent implements OnInit {
     }
   }
 
+  async cambiarWs(s: SuscripcionDetalle, habilitar: boolean): Promise<void> {
+    const ok = await Swal.fire({
+      icon: 'question',
+      title: habilitar ? 'Habilitar WS-CNTPAQi.Net' : 'Deshabilitar WS-CNTPAQi.Net',
+      text: `Para ${s.producto_nombre} de este cliente. La configuración de la conexión la captura el cliente dentro de la app.`,
+      showCancelButton: true, confirmButtonText: habilitar ? 'Habilitar' : 'Deshabilitar', cancelButtonText: 'Cancelar',
+      confirmButtonColor: COLOR_PRIMARIO, reverseButtons: true,
+    });
+    if (!ok.isConfirmed) { this.cargar(); return; }
+    this.ejecutar(s.id, this.service.wsCntpaq(s.id, habilitar), habilitar ? 'WS-CNTPAQi.Net habilitado' : 'WS-CNTPAQi.Net deshabilitado');
+  }
+
   verMetricas(s: SuscripcionDetalle): void {
     const actuales = { ...this.metricas() };
     if (actuales[s.id]) {
