@@ -16,6 +16,7 @@
       <a routerLink="/catalogo/productos" routerLinkActive="active">Productos y planes</a>
       @if (puede('operadores.gestionar')) { <a routerLink="/operadores" routerLinkActive="active">Operadores</a> }
       @if (puede('escalafon.gestionar')) { <a routerLink="/escalafon" routerLinkActive="active">Escalafón</a> }
+      @if (puede('correos.ver')) { <a routerLink="/correos" routerLinkActive="active">Correo</a> }
       @if (puede('boveda.gestionar')) { <a routerLink="/boveda" routerLinkActive="active">Bóveda</a> }
       @if (puede('auditoria.ver')) {
         <a routerLink="/bitacora" routerLinkActive="active">Bitácora</a>

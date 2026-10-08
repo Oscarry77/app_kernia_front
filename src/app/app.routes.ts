@@ -54,6 +54,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/escalafon/escalafon.component').then(m => m.EscalafonComponent),
       },
+      // (07-oct-2026) Centro de correo.
+      {
+        path: 'correos',
+        canActivate: [permisoGuard('correos.ver')],
+        loadComponent: () =>
+          import('./features/correos/correos.component').then(m => m.CorreosComponent),
+      },
       // (07-oct-2026) Bóveda: solo el superadministrador.
       {
         path: 'boveda',
