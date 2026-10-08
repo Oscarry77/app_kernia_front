@@ -54,6 +54,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/escalafon/escalafon.component').then(m => m.EscalafonComponent),
       },
+      // (07-oct-2026) Bóveda: solo el superadministrador.
+      {
+        path: 'boveda',
+        canActivate: [permisoGuard('boveda.gestionar')],
+        loadComponent: () =>
+          import('./features/boveda/boveda.component').then(m => m.BovedaComponent),
+      },
       {
         path: 'bitacora',
         canActivate: [permisoGuard('auditoria.ver')],

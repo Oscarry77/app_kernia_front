@@ -1,0 +1,145 @@
+<div class="crud">
+  <div class="crud__header">
+    <div>
+      <h2 class="crud__title">Bóveda</h2>
+      <p class="crud__subtitle">
+        Secretos de Kernia guardados cifrados. Se capturan o reemplazan, pero <b>nadie puede verlos</b>: solo los usan los
+        procesos del sistema y cada uso queda registrado.
+      </p>
+    </div>
+    <button class="btn btn--secondary" type="button" (click)="cargar()">Actualizar</button>
+  </div>
+
+  @if (cargando()) {
+    <div class="crud__tabla-wrap"><div class="crud__vacio">Cargando...</div></div>
+  } @else if (errorCarga()) {
+    <div class="crud__tabla-wrap"><div class="crud__vacio texto-error">{{ errorCarga() }}</div></div>
+  } @else {
+    <h3 class="subtitulo">Buzón de Kernia</h3>
+    <div class="crud__tabla-wrap" style="padding: 16px">
+      @if (correo(); as c) {
+        @if (c.resumen; as r) {
+          <table class="crud__tabla">
+            <tbody>
+              <tr><th>Servidor</th><td>{{ r.host }}:{{ r.port }} ({{ r.cifrado === 'ssl' ? 'SSL' : 'TLS' }})</td></tr>
+              <tr><th>Usuario</th><td>{{ r.usuario }}</td></tr>
+              <tr><th>Contraseña</th><td>•••••••• <span class="texto-tenue">guardada en la bóveda, no se muestra</span></td></tr>
+              <tr><th>Remitente</th><td>{{ r.nombre_remitente }} &lt;{{ r.remitente }}&gt;</td></tr>
+              <tr><th>Actualizado</th><td>{{ r.actualizado_en | date: 'dd/MM/yyyy HH:mm' }} · {{ r.actualizado_por || 'consola' }}</td></tr>
+            </tbody>
+          </table>
+        } @else {
+          <p class="texto-tenue">Aún no hay credenciales del buzón en la bóveda.</p>
+        }
+
+        @if (c.configurado && c.mailer !== 'kernia') {
+          <div class="alerta alerta--advertencia" style="margin-top: 12px">
+            Kernia todavía envía con el mailer «{{ c.mailer }}» del .env. Para que use la bóveda: en el .env pon
+            <code>MAIL_MAILER=kernia</code>, borra <code>MAIL_USERNAME</code> y <code>MAIL_PASSWORD</code> y corre
+            <code>php artisan config:clear</code>. El correo de prueba ya usa la bóveda.
+          </div>
+        } @else if (c.disponible) {
+          <div class="alerta alerta--info" style="margin-top: 12px">Kernia envía sus correos con las credenciales de la bóveda.</div>
+        } @else {
+          <div class="alerta alerta--advertencia" style="margin-top: 12px">Kernia no puede enviar correos: captura las credenciales del buzón.</div>
+        }
+
+        <div class="app__acciones-linea" style="display: flex; gap: 8px; margin-top: 12px">
+          <button class="btn btn--primary btn--sm" type="button" (click)="editarCorreo()">{{ c.configurado ? 'Reemplazar credenciales' : 'Capturar credenciales' }}</button>
+          @if (c.configurado) { <button class="btn btn--secondary btn--sm" type="button" (click)="probar()">Enviar correo de prueba</button> }
+        </div>
+      }
+    </div>
+
+    <h3 class="subtitulo">Secretos resguardados</h3>
+    <div class="crud__tabla-wrap">
+      @if (secretos().length === 0) {
+        <div class="crud__vacio">La bóveda está vacía.</div>
+      } @else {
+        <table class="crud__tabla">
+          <thead><tr><th>Tipo</th><th>Descripción</th><th>Cliente</th><th>Estado</th><th>Expira</th><th>Actualizado</th><th></th></tr></thead>
+          <tbody>
+            @for (s of secretos(); track s.id) {
+              <tr>
+                <td>{{ etiquetaTipo(s.tipo) }}</td>
+                <td>{{ s.descripcion || '—' }}<div class="texto-tenue"><code>{{ s.clave }}</code></div></td>
+                <td>{{ s.cliente || '—' }}</td>
+                <td><span class="badge" [class.badge--activo]="s.vigente" [class.badge--inactivo]="!s.vigente">{{ s.vigente ? 'Vigente' : 'Purgado' }}</span></td>
+                <td>{{ s.expira_en ? (s.expira_en | date: 'dd/MM/yyyy') : 'Sin vencimiento' }}</td>
+                <td>{{ s.actualizado_en | date: 'dd/MM/yyyy HH:mm' }}<div class="texto-tenue">{{ s.actualizado_por || 'sistema' }}</div></td>
+                <td class="acciones"><button class="btn btn--secondary btn--sm" type="button" (click)="verAccesos(s)">{{ accesosDe(s.id) ? 'Ocultar' : 'Bitácora' }}</button></td>
+              </tr>
+              @if (accesosDe(s.id); as a) {
+                <tr>
+                  <td colspan="7">
+                    @if (a === 'cargando') {
+                      <span class="texto-tenue">Cargando...</span>
+                    } @else if (a.length === 0) {
+                      <span class="texto-tenue">Sin registros.</span>
+                    } @else {
+                      <table class="crud__tabla">
+                        <thead><tr><th>Fecha</th><th>Acción</th><th>Quién</th><th>Motivo</th><th>IP</th></tr></thead>
+                        <tbody>
+                          @for (x of a; track $index) {
+                            <tr>
+                              <td>{{ x.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+                              <td>{{ etiquetaAccion(x.accion) }}</td>
+                              <td>{{ x.usuario || 'sistema' }}</td>
+                              <td>{{ x.motivo || '—' }}</td>
+                              <td>{{ x.ip || '—' }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    }
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  }
+</div>
+
+@if (edicion(); as e) {
+  <div class="modal-overlay" (click)="!guardando() && edicion.set(null)">
+    <div class="modal" role="dialog" aria-labelledby="t-correo" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3 id="t-correo">Credenciales del buzón de Kernia</h3>
+        <button class="modal__cerrar" type="button" aria-label="Cerrar" (click)="edicion.set(null)" [disabled]="guardando()">✕</button>
+      </div>
+      @if (error()) { <div class="alerta alerta--error">{{ error() }}</div> }
+      <div class="form-grid">
+        <div class="campo"><label for="c-host">Servidor SMTP <span class="req">*</span></label>
+          <input id="c-host" type="text" [(ngModel)]="e.host" placeholder="smtp.gmail.com" autocomplete="off" /></div>
+        <div class="campo"><label for="c-port">Puerto <span class="req">*</span></label>
+          <select id="c-port" [(ngModel)]="e.port" (ngModelChange)="cambiarPuerto(e)">
+            <option [ngValue]="587">587 (recomendado)</option><option [ngValue]="465">465</option>
+            <option [ngValue]="25">25</option><option [ngValue]="2525">2525</option>
+          </select></div>
+        <div class="campo"><label for="c-cifrado">Cifrado</label>
+          <select id="c-cifrado" [(ngModel)]="e.cifrado"><option value="tls">TLS (STARTTLS)</option><option value="ssl">SSL</option></select></div>
+        <div class="campo"><label for="c-usuario">Usuario <span class="req">*</span></label>
+          <input id="c-usuario" type="text" [(ngModel)]="e.usuario" autocomplete="off" /></div>
+        <div class="campo"><label for="c-pass">Contraseña del buzón</label>
+          <input id="c-pass" type="password" [(ngModel)]="e.password" autocomplete="new-password"
+                 [placeholder]="correo()?.configurado ? 'Vacía conserva la guardada' : 'En Gmail, la contraseña de aplicación'" /></div>
+        <div class="campo"><label for="c-rem">Correo remitente <span class="req">*</span></label>
+          <input id="c-rem" type="email" [(ngModel)]="e.remitente" /></div>
+        <div class="campo"><label for="c-nom">Nombre del remitente <span class="req">*</span></label>
+          <input id="c-nom" type="text" maxlength="120" [(ngModel)]="e.nombre_remitente" /></div>
+      </div>
+      <fieldset class="seccion">
+        <legend>Confirmación</legend>
+        <div class="campo"><label for="c-conf">Tu contraseña de Kernia <span class="req">*</span></label>
+          <input id="c-conf" type="password" [(ngModel)]="e.password_operador" autocomplete="current-password" /></div>
+      </fieldset>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" type="button" (click)="edicion.set(null)" [disabled]="guardando()">Cancelar</button>
+        <button class="btn btn--primary" type="button" (click)="guardarCorreo()" [disabled]="guardando() || !e.host || !e.usuario || !e.remitente">Guardar en la bóveda</button>
+      </div>
+    </div>
+  </div>
+}
