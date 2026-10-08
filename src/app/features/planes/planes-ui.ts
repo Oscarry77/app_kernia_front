@@ -5,6 +5,8 @@ import Swal from 'sweetalert2';
 import type { ClientesService } from '../../core/services/clientes.service';
 import type { ProductoCatalogo, ResumenPagos, SolicitudPlan, SuscripcionDetalle, VistaPreviaPlan } from '../../core/models/panel.model';
 import { COLOR_PRIMARIO, escapar, etiquetaLimite, mensajeError } from '../clientes/panel-ui';
+import { motivosSalida, selectMotivoHtml } from '../salidas/salidas-ui';
+import type { MotivoSalida } from '../../core/models/panel.model';
 
 /**
  * (05-oct-2026) Planes para los operadores: la ficha comparativa de cada
@@ -121,6 +123,13 @@ export async function solicitarCambioPlan(service: ClientesService, s: Suscripci
     return false;
   }
   let vista: VistaPreviaPlan | null = null;
+  // (08-oct-2026) Una baja pide el motivo de salida (formulario del asesor).
+  let motivos: MotivoSalida[] = [];
+  try {
+    motivos = await motivosSalida(service);
+  } catch {
+    motivos = [];
+  }
 
   const r = await Swal.fire({
     title: `Cambiar plan: ${escapar(s.producto_nombre)}`,
@@ -139,6 +148,7 @@ export async function solicitarCambioPlan(service: ClientesService, s: Suscripci
             En la renovación <span id="cp-fecha" style="${TENUE}"></span></label>
           <label style="display:block;margin:6px 0"><input type="radio" name="cp-ap" value="inmediata"> En el siguiente corte (00:00 de mañana)</label>
           <div style="${TENUE};font-size:13px">Una baja siempre se aplica a las 00:00. El cliente ve un aviso en su app desde que se autoriza.</div>
+          <div style="margin-top:10px">${selectMotivoHtml(motivos, 'cp-motivo-salida')}</div>
         </fieldset>
         <label for="cp-motivo" style="display:block;font-weight:600">Motivo (queda en la bitácora)</label>
         <textarea id="cp-motivo" class="swal2-textarea" style="margin:6px 0 0;width:100%" placeholder="Por ejemplo: el cliente contrató Tesorería"></textarea>
@@ -190,8 +200,13 @@ export async function solicitarCambioPlan(service: ClientesService, s: Suscripci
       }
       const aplicacion = (document.querySelector('input[name="cp-ap"]:checked') as HTMLInputElement | null)?.value === 'inmediata'
         ? 'inmediata' : 'renovacion';
+      const motivoSalida = vista.direccion === 'bajada' ? (document.getElementById('cp-motivo-salida') as HTMLSelectElement).value : '';
+      if (vista.direccion === 'bajada' && !motivoSalida) {
+        Swal.showValidationMessage('Elige el motivo de la baja de plan.');
+        return false;
+      }
       try {
-        return await firstValueFrom(service.solicitarCambioPlan(s.id, { plan: vista.plan_nuevo, aplicacion, motivo }));
+        return await firstValueFrom(service.solicitarCambioPlan(s.id, { plan: vista.plan_nuevo, aplicacion, motivo, ...(motivoSalida ? { motivo_salida: motivoSalida } : {}) }));
       } catch (err) {
         Swal.showValidationMessage(mensajeError(err as HttpErrorResponse, 'No se pudo registrar la solicitud.'));
         return false;

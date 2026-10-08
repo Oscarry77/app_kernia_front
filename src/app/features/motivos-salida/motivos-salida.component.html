@@ -1,0 +1,102 @@
+<div class="crud">
+  <div class="crud__header">
+    <div>
+      <h2 class="crud__title">Motivos de salida</h2>
+      <p class="crud__subtitle">
+        Por qué se van los clientes o bajan de plan: lo que registra el asesor al solicitarlo y lo que el cliente contesta
+        en su encuesta (opcional, desde un enlace de un solo uso).
+      </p>
+    </div>
+    <button class="btn btn--secondary" type="button" (click)="cargar()">Actualizar</button>
+  </div>
+
+  <form class="filtros-motivos" (ngSubmit)="cargar()">
+    <label>Desde <input type="date" name="desde" [(ngModel)]="filtros.desde"></label>
+    <label>Hasta <input type="date" name="hasta" [(ngModel)]="filtros.hasta"></label>
+    <label>Quién
+      <select name="origen" [(ngModel)]="filtros.origen">
+        <option value="">Asesor y cliente</option>
+        <option value="asesor">Asesor</option>
+        <option value="cliente">Cliente</option>
+      </select>
+    </label>
+    <label>Evento
+      <select name="evento" [(ngModel)]="filtros.evento">
+        <option value="">Todos</option>
+        @for (e of eventos | keyvalue; track e.key) { <option [value]="e.key">{{ e.value }}</option> }
+      </select>
+    </label>
+    <label>App
+      <select name="producto" [(ngModel)]="filtros.producto">
+        <option value="">Todas</option>
+        @for (p of productos(); track p.slug) { <option [value]="p.slug">{{ p.nombre }}</option> }
+      </select>
+    </label>
+    <button class="btn btn--primary btn--sm" type="submit">Filtrar</button>
+    <button class="btn btn--secondary btn--sm" type="button" (click)="limpiar()">Limpiar</button>
+  </form>
+
+  @if (resumen(); as r) {
+    <div class="indicadores">
+      <div class="indicador"><span class="indicador__valor">{{ r.total }}</span><span class="indicador__nombre">Registros</span></div>
+      <div class="indicador"><span class="indicador__valor">{{ r.respuestas_cliente }}</span><span class="indicador__nombre">Encuestas de clientes</span></div>
+      <div class="indicador">
+        <span class="indicador__valor">{{ r.calificacion_promedio ?? '—' }}@if (r.calificacion_promedio !== null) {<small> / 5</small>}</span>
+        <span class="indicador__nombre">Calificación promedio</span>
+      </div>
+      <div class="indicador">
+        <span class="indicador__valor">{{ r.recomendaria_pct !== null ? r.recomendaria_pct + '%' : '—' }}</span>
+        <span class="indicador__nombre">Nos recomendaría</span>
+      </div>
+    </div>
+
+    @if (motivos().length) {
+      <div class="barras" aria-label="Motivos, de más a menos frecuente">
+        @for (m of motivos(); track m.motivo) {
+          <div class="barra">
+            <span class="barra__nombre">{{ m.nombre }}</span>
+            <span class="barra__pista"><span class="barra__relleno" [style.width.%]="m.pct"></span></span>
+            <span class="barra__cifra">{{ m.total }} <span class="texto-tenue">(asesor {{ m.asesor }} · cliente {{ m.cliente }})</span></span>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <div class="crud__tabla-wrap">
+    @if (cargando()) {
+      <div class="crud__vacio">Cargando...</div>
+    } @else if (error()) {
+      <div class="crud__vacio texto-error">{{ error() }}</div>
+    } @else if (filas().length === 0) {
+      <div class="crud__vacio">Aún no hay motivos registrados con estos filtros.</div>
+    } @else {
+      <table class="crud__tabla">
+        <thead>
+          <tr><th>Fecha</th><th>Cliente</th><th>App</th><th>Evento</th><th>Quién</th><th>Motivo</th><th>Calificación</th><th>¿Recomendaría?</th></tr>
+        </thead>
+        <tbody>
+          @for (f of filas(); track f.id) {
+            <tr [class.no-concretada]="noConcretada(f)">
+              <td>{{ f.fecha | date: 'dd/MM/yyyy' }}</td>
+              <td><a [routerLink]="['/clientes', f.cliente_id]"><strong>{{ f.cliente }}</strong></a></td>
+              <td>{{ f.producto || '—' }}</td>
+              <td>
+                {{ eventos[f.evento] || f.evento }}
+                @if (noConcretada(f)) { <div class="texto-tenue">Solicitud {{ f.estado_solicitud }}</div> }
+              </td>
+              <td>{{ f.origen === 'cliente' ? 'Cliente' : 'Asesor' }}@if (f.registrado_por) { <div class="texto-tenue">{{ f.registrado_por }}</div> }</td>
+              <td>
+                <strong>{{ f.motivo_nombre }}</strong>
+                @if (f.detalle) { <div>{{ f.detalle }}</div> }
+                @if (f.mejora) { <div class="texto-tenue">Qué pudimos hacer mejor: {{ f.mejora }}</div> }
+              </td>
+              <td><span class="estrellas" [attr.aria-label]="f.calificacion ? f.calificacion + ' de 5' : 'Sin calificación'">{{ estrellas(f.calificacion) }}</span></td>
+              <td>{{ f.recomendaria === null ? '—' : (f.recomendaria ? 'Sí' : 'No') }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>

@@ -7,8 +7,11 @@ import type {
   CatalogoFiscal,
   Cliente,
   DatosFiscales,
+  FilaMotivoSalida,
   FilaVigencia,
+  MotivoSalida,
   Pago,
+  ResumenMotivosSalida,
   ConPasswordTemporal,
   ProductoCatalogo,
   ResumenPagos,
@@ -60,7 +63,7 @@ export class ClientesService {
     return this.http.get<{ data: VistaPreviaPlan }>(`${this.api}/suscripciones/${id}/plan/vista-previa`, { params: new HttpParams().set('plan', plan) });
   }
 
-  solicitarCambioPlan(id: number, datos: { plan: string; aplicacion: 'inmediata' | 'renovacion'; motivo: string }): Observable<{ data: SolicitudPlan }> {
+  solicitarCambioPlan(id: number, datos: { plan: string; aplicacion: 'inmediata' | 'renovacion'; motivo: string; motivo_salida?: string }): Observable<{ data: SolicitudPlan }> {
     return this.http.post<{ data: SolicitudPlan }>(`${this.api}/suscripciones/${id}/cambios-plan`, datos);
   }
 
@@ -82,7 +85,7 @@ export class ClientesService {
   }
 
   // ── Salida (08-oct-2026): retirar, reactivar o finiquitar, con autorización del escalafón ──
-  solicitarSalida(id: number, datos: { tipo: TipoSalida; motivo: string; conformidad_tipo?: 'correo' | 'documento'; conformidad_referencia?: string; confirmacion_slug?: string }): Observable<{ data: SolicitudSalida }> {
+  solicitarSalida(id: number, datos: { tipo: TipoSalida; motivo: string; motivo_salida?: string; conformidad_tipo?: 'correo' | 'documento'; conformidad_referencia?: string; confirmacion_slug?: string }): Observable<{ data: SolicitudSalida }> {
     return this.http.post<{ data: SolicitudSalida }>(`${this.api}/suscripciones/${id}/salidas`, datos);
   }
 
@@ -101,6 +104,22 @@ export class ClientesService {
 
   cancelarSalida(id: number, motivo: string): Observable<{ data: SolicitudSalida }> {
     return this.http.post<{ data: SolicitudSalida }>(`${this.api}/salidas/${id}/cancelar`, { motivo });
+  }
+
+  // ── Formulario de salida (08-oct-2026) ──
+  motivosSalida(): Observable<{ data: MotivoSalida[] }> {
+    return this.http.get<{ data: MotivoSalida[] }>(`${this.api}/catalogo/motivos-salida`);
+  }
+
+  /** Enlace de un solo uso para el cliente; la URL solo existe en esta respuesta. */
+  enlaceFormularioSalida(id: number): Observable<{ data: { url: string; expira_en: string } }> {
+    return this.http.post<{ data: { url: string; expira_en: string } }>(`${this.api}/suscripciones/${id}/formulario-salida/enlace`, {});
+  }
+
+  motivosSalidaDireccion(filtros: Record<string, string>): Observable<{ data: FilaMotivoSalida[]; resumen: ResumenMotivosSalida }> {
+    let params = new HttpParams();
+    for (const [k, v] of Object.entries(filtros)) if (v) params = params.set(k, v);
+    return this.http.get<{ data: FilaMotivoSalida[]; resumen: ResumenMotivosSalida }>(`${this.api}/motivos-salida`, { params });
   }
 
   agregarExtra(id: number, extra: string, cantidad: number, motivo: string): Observable<{ data: SuscripcionDetalle }> {

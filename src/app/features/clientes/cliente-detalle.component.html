@@ -351,6 +351,9 @@
                 {{ s.estatus_almacenado === 'activo' ? 'Suspender' : 'Reactivar' }}
               </button>
             }
+            @if (puede('salidas.solicitar') && (s.estatus_almacenado === 'retirado' || s.estatus_almacenado === 'en_finiquito' || s.estatus_almacenado === 'finiquitado')) {
+              <button class="btn btn--secondary btn--sm" type="button" (click)="enlaceEncuesta(s)" [disabled]="ocupado() === s.id">Enlace de encuesta para el cliente</button>
+            }
             @if (puede('salidas.solicitar') && !s.salida) {
               @for (op of tiposSalida; track op.tipo) {
                 @if (s.salidas_posibles[op.tipo]; as pos) {

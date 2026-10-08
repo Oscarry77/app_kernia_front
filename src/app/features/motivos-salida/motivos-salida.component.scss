@@ -1,0 +1,85 @@
+@use '../../styles/comercializa-variables' as v;
+
+.filtros-motivos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: v.$spacing-sm v.$spacing-md;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: v.$spacing-xs;
+    font-size: v.$font-size-sm;
+    color: v.$text-secondary;
+  }
+
+  input, select {
+    background: v.$bg-card;
+    color: v.$text-primary;
+    border: 1px solid v.$border-card;
+    border-radius: v.$radius-sm;
+    padding: 6px 10px;
+    font: inherit;
+    color-scheme: dark;
+  }
+}
+
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: v.$spacing-md;
+}
+
+.indicador {
+  background: v.$bg-card;
+  border: 1px solid v.$border-card;
+  border-radius: v.$radius-md;
+  padding: v.$spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: v.$spacing-xs;
+
+  &__valor {
+    font-size: v.$font-size-2xl;
+    font-weight: v.$font-weight-bold;
+    color: v.$text-primary;
+    font-variant-numeric: tabular-nums;
+
+    small { font-size: v.$font-size-sm; color: v.$text-secondary; font-weight: v.$font-weight-regular; }
+  }
+
+  &__nombre { font-size: v.$font-size-sm; color: v.$text-secondary; }
+}
+
+.barras {
+  background: v.$bg-card;
+  border: 1px solid v.$border-card;
+  border-radius: v.$radius-md;
+  padding: v.$spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: v.$spacing-sm;
+}
+
+.barra {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) 1fr auto;
+  align-items: center;
+  gap: v.$spacing-md;
+  font-size: v.$font-size-sm;
+
+  &__nombre { color: v.$text-primary; }
+  &__pista { height: 10px; border-radius: v.$radius-full; background: v.$border-card; overflow: hidden; }
+  &__relleno { display: block; height: 100%; border-radius: v.$radius-full; background: v.$primary; }
+  &__cifra { color: v.$text-primary; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr auto;
+    &__pista { grid-column: 1 / -1; grid-row: 2; }
+  }
+}
+
+.estrellas { color: v.$warning; letter-spacing: 1px; white-space: nowrap; }
+
+.no-concretada td { opacity: 0.6; }

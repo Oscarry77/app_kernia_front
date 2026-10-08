@@ -349,3 +349,35 @@ export interface SolicitudSalida {
   producto?: string;
   producto_nombre?: string;
 }
+
+/** (08-oct-2026) Formulario de salida. */
+export interface MotivoSalida {
+  clave: string;
+  nombre: string;
+}
+
+export interface FilaMotivoSalida {
+  id: number;
+  fecha: string;
+  cliente_id: number;
+  cliente: string | null;
+  producto: string | null;
+  origen: 'asesor' | 'cliente';
+  evento: 'retiro' | 'finiquito' | 'baja_plan' | 'archivo';
+  motivo: string;
+  motivo_nombre: string;
+  detalle: string | null;
+  calificacion: number | null;
+  mejora: string | null;
+  recomendaria: boolean | null;
+  registrado_por: string | null;
+  estado_solicitud: EstadoSolicitudPlan | null;
+}
+
+export interface ResumenMotivosSalida {
+  total: number;
+  por_motivo: { motivo: string; nombre: string; asesor: number; cliente: number }[];
+  respuestas_cliente: number;
+  calificacion_promedio: number | null;
+  recomendaria_pct: number | null;
+}

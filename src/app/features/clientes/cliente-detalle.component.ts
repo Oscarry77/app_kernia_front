@@ -15,7 +15,7 @@ import { cancelarCambioPlan, mostrarFichaPlanes, resolverCambioPlan, resumenSoli
 import { cancelarSalida, etiquetaTipoSalida, resolverSalida, resumenSalida, solicitarSalida } from '../salidas/salidas-ui';
 import type { Observable } from 'rxjs';
 import { ClienteFormComponent } from './cliente-form.component';
-import { COLOR_PRIMARIO, etiquetaDias, etiquetaEstatus, etiquetaLimite, mensajeError, mostrarPasswordUnaVez, etiquetaTipoCliente } from './panel-ui';
+import { COLOR_PRIMARIO, etiquetaDias, etiquetaEstatus, etiquetaLimite, mensajeError, mostrarEnlaceUnaVez, mostrarPasswordUnaVez, etiquetaTipoCliente } from './panel-ui';
 
 interface EdicionVigencia {
   s: SuscripcionDetalle;
@@ -262,6 +262,28 @@ export class ClienteDetalleComponent implements OnInit {
 
   async cancelarSalida(sol: SolicitudSalida): Promise<void> {
     if (await cancelarSalida(this.service, sol)) this.cargar();
+  }
+
+  /** (08-oct-2026) Enlace de un solo uso para que el cliente conteste la encuesta de salida. */
+  async enlaceEncuesta(s: SuscripcionDetalle): Promise<void> {
+    const r = await Swal.fire({
+      icon: 'question',
+      title: 'Enlace de la encuesta de salida',
+      text: 'Se genera un enlace de un solo uso, válido 30 días, para que el cliente cuente por qué se va. Si ya habías generado uno, el anterior deja de servir.',
+      showCancelButton: true, confirmButtonText: 'Generar enlace', cancelButtonText: 'Cancelar',
+      confirmButtonColor: COLOR_PRIMARIO, reverseButtons: true,
+    });
+    if (!r.isConfirmed) return;
+
+    this.ocupado.set(s.id);
+    try {
+      const { data } = await firstValueFrom(this.service.enlaceFormularioSalida(s.id));
+      await mostrarEnlaceUnaVez(data.url, data.expira_en);
+    } catch (err) {
+      await this.mostrarError(err as HttpErrorResponse, 'No se pudo generar el enlace.');
+    } finally {
+      this.ocupado.set(null);
+    }
   }
 
   async moverExtra(s: SuscripcionDetalle, extra: { codigo: string; nombre: string; total: number }, signo: 1 | -1): Promise<void> {

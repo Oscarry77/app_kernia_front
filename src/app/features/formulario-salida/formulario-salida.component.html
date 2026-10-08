@@ -1,0 +1,85 @@
+<div class="salida-shell">
+  <main class="salida-card" role="main">
+    <header class="salida-card__header">
+      <svg width="40" height="40" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="#C2661D"/>
+        <path d="M16 6l9 5v10l-9 5-9-5V11l9-5z" stroke="white" stroke-width="1.6" stroke-linejoin="round" opacity="0.9"/>
+        <path d="M16 16l9-5M16 16v10M16 16L7 11" stroke="white" stroke-width="1.6" stroke-linejoin="round" opacity="0.9"/>
+      </svg>
+      <span class="salida-card__marca">KERNIA</span>
+    </header>
+
+    @switch (estado()) {
+      @case ('cargando') {
+        <p class="salida-card__texto">Cargando…</p>
+      }
+      @case ('cerrado') {
+        <h1 class="salida-card__titulo">{{ mensaje() }}</h1>
+        <p class="salida-card__texto">Si necesitas algo, contacta a tu asesor. Seguimos a tus órdenes.</p>
+      }
+      @case ('enviado') {
+        <h1 class="salida-card__titulo">¡Gracias por tus respuestas!</h1>
+        <p class="salida-card__texto">Nos ayudan a mejorar. Si en el futuro necesitas algo, tu asesor sigue a tus órdenes.</p>
+      }
+      @case ('formulario') {
+        <h1 class="salida-card__titulo">Gracias por usar {{ app() }}</h1>
+        <p class="salida-card__texto">
+          Hola, <b>{{ cliente() }}</b>. Nos gustaría saber por qué dejas el servicio. Son cuatro preguntas y solo la primera es
+          obligatoria. Este enlace sirve una sola vez.
+        </p>
+
+        <form class="salida-form" (ngSubmit)="enviar()" novalidate>
+          <fieldset>
+            <legend>1. ¿Cuál fue el motivo principal? <span class="req">*</span></legend>
+            <div class="opciones">
+              @for (m of motivos(); track m.clave) {
+                <label class="opcion" [class.opcion--activa]="respuesta.motivo === m.clave">
+                  <input type="radio" name="motivo" [value]="m.clave" [(ngModel)]="respuesta.motivo"> {{ m.nombre }}
+                </label>
+              }
+            </div>
+            <label class="campo">
+              <span>{{ respuesta.motivo === 'otro' ? 'Cuéntanos el motivo' : 'Detalle (opcional)' }}</span>
+              <textarea name="detalle" rows="3" maxlength="2000" [(ngModel)]="respuesta.detalle"></textarea>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>2. ¿Cómo calificarías el servicio en general?</legend>
+            <div class="escala" role="radiogroup" aria-label="Calificación de 1 a 5">
+              @for (n of escala; track n) {
+                <label class="escala__punto" [class.escala__punto--activo]="respuesta.calificacion === n">
+                  <input type="radio" name="calificacion" [value]="n" [(ngModel)]="respuesta.calificacion">{{ n }}
+                </label>
+              }
+            </div>
+            <div class="escala__leyenda"><span>Muy malo</span><span>Excelente</span></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>3. ¿Qué pudimos hacer mejor?</legend>
+            <label class="campo">
+              <textarea name="mejora" rows="3" maxlength="2000" [(ngModel)]="respuesta.mejora" aria-label="Qué pudimos hacer mejor"></textarea>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>4. ¿Nos recomendarías?</legend>
+            <div class="opciones opciones--fila">
+              <label class="opcion" [class.opcion--activa]="respuesta.recomendaria === true">
+                <input type="radio" name="recomendaria" [value]="true" [(ngModel)]="respuesta.recomendaria"> Sí
+              </label>
+              <label class="opcion" [class.opcion--activa]="respuesta.recomendaria === false">
+                <input type="radio" name="recomendaria" [value]="false" [(ngModel)]="respuesta.recomendaria"> No
+              </label>
+            </div>
+          </fieldset>
+
+          @if (error()) { <p class="salida-form__error" role="alert">{{ error() }}</p> }
+
+          <button class="salida-form__enviar" type="submit" [disabled]="enviando()">{{ enviando() ? 'Enviando…' : 'Enviar respuestas' }}</button>
+        </form>
+      }
+    }
+  </main>
+</div>

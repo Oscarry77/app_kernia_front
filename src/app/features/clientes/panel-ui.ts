@@ -46,6 +46,29 @@ export async function mostrarPasswordUnaVez(titulo: string, usuario: string | nu
   });
 }
 
+/** (08-oct-2026) Muestra UNA vez el enlace de la encuesta de salida, con botón para copiarlo. */
+export async function mostrarEnlaceUnaVez(url: string, expiraEn: string): Promise<void> {
+  const vence = new Date(expiraEn).toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City' });
+  await Swal.fire({
+    icon: 'success',
+    title: 'Enlace generado',
+    html: `
+      <p style="margin:0 0 8px">Se muestra <b>una sola vez</b>. Envíalo al administrador del cliente; sirve una vez y vence el <b>${escapar(vence)}</b>.</p>
+      <code style="display:block;margin-top:6px;padding:10px;border-radius:8px;background:#0d0f13;color:#edeff3;font-size:13px;word-break:break-all;user-select:all">${escapar(url)}</code>`,
+    showDenyButton: true,
+    denyButtonText: 'Copiar',
+    denyButtonColor: '#4b5563',
+    confirmButtonText: 'Listo',
+    confirmButtonColor: COLOR_PRIMARIO,
+    allowOutsideClick: false,
+    preDeny: async () => {
+      await navigator.clipboard.writeText(url);
+      Swal.showValidationMessage('Copiado al portapapeles.');
+      return false;
+    },
+  });
+}
+
 export function etiquetaEstatus(estatus: string): string {
   return ({
     activo: 'Activo',

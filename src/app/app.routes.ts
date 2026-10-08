@@ -7,6 +7,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/login/login.component').then(m => m.LoginComponent),
   },
+  // (08-oct-2026) Encuesta de salida que contesta el CLIENTE: pública, sin sesión.
+  {
+    path: 'salida/:token',
+    loadComponent: () =>
+      import('./features/formulario-salida/formulario-salida.component').then(m => m.FormularioSalidaComponent),
+  },
   {
     path: '',
     canActivate: [authGuard],
@@ -67,6 +73,13 @@ export const routes: Routes = [
         canActivate: [permisoGuard('boveda.gestionar')],
         loadComponent: () =>
           import('./features/boveda/boveda.component').then(m => m.BovedaComponent),
+      },
+      // (08-oct-2026) Motivos de salida: Dirección.
+      {
+        path: 'motivos-salida',
+        canActivate: [permisoGuard('salidas.motivos')],
+        loadComponent: () =>
+          import('./features/motivos-salida/motivos-salida.component').then(m => m.MotivosSalidaComponent),
       },
       {
         path: 'bitacora',

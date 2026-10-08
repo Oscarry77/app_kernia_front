@@ -3,7 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import type { ClientesService } from '../../core/services/clientes.service';
-import type { SolicitudSalida, SuscripcionDetalle, TipoSalida } from '../../core/models/panel.model';
+import type { MotivoSalida, SolicitudSalida, SuscripcionDetalle, TipoSalida } from '../../core/models/panel.model';
 import { COLOR_PRIMARIO, escapar, mensajeError } from '../clientes/panel-ui';
 
 /**
@@ -35,6 +35,23 @@ export function resumenSalida(sol: SolicitudSalida): string {
   return `${etiquetaTipoSalida(sol.tipo)} · ${cuando}`;
 }
 
+let motivosCache: MotivoSalida[] | null = null;
+
+/** Catálogo de motivos de salida (se pide una vez por sesión). */
+export async function motivosSalida(service: ClientesService): Promise<MotivoSalida[]> {
+  motivosCache ??= (await firstValueFrom(service.motivosSalida())).data;
+  return motivosCache;
+}
+
+/** Select de motivo de salida para los diálogos (formulario del asesor, obligatorio). */
+export function selectMotivoHtml(motivos: MotivoSalida[], id: string): string {
+  return `<label for="${id}" style="display:block;font-weight:600">Motivo de salida del cliente</label>
+    <select id="${id}" class="swal2-select" style="margin:6px 0 12px;width:100%">
+      <option value="">Elige un motivo…</option>
+      ${motivos.map(m => `<option value="${escapar(m.clave)}">${escapar(m.nombre)}</option>`).join('')}
+    </select>`;
+}
+
 function explicacion(tipo: TipoSalida, s: SuscripcionDetalle): string {
   switch (tipo) {
     case 'retiro':
@@ -52,6 +69,16 @@ function explicacion(tipo: TipoSalida, s: SuscripcionDetalle): string {
 /** Solicitud de salida. Devuelve true si se registró. */
 export async function solicitarSalida(service: ClientesService, s: SuscripcionDetalle, tipo: TipoSalida, slug: string): Promise<boolean> {
   const finiquito = tipo === 'finiquito';
+  const conMotivo = tipo !== 'reactivacion';
+  let motivos: MotivoSalida[] = [];
+  if (conMotivo) {
+    try {
+      motivos = await motivosSalida(service);
+    } catch {
+      await Swal.fire({ icon: 'error', title: 'No se pudo cargar la lista de motivos', confirmButtonColor: COLOR_PRIMARIO });
+      return false;
+    }
+  }
   const r = await Swal.fire({
     title: `${TITULO[tipo]}: ${escapar(s.producto_nombre)}`,
     width: 620,
@@ -59,7 +86,8 @@ export async function solicitarSalida(service: ClientesService, s: SuscripcionDe
     html: `
       <div style="text-align:left">
         <p style="margin:0 0 12px">${explicacion(tipo, s)} La autoriza una persona del escalafón con su usuario y contraseña.</p>
-        <label for="sl-motivo" style="display:block;font-weight:600">Motivo (queda en la bitácora)</label>
+        ${conMotivo ? selectMotivoHtml(motivos, 'sl-motivo-salida') : ''}
+        <label for="sl-motivo" style="display:block;font-weight:600">${conMotivo ? 'Detalle' : 'Motivo'} (queda en la bitácora)</label>
         <textarea id="sl-motivo" class="swal2-textarea" style="margin:6px 0 12px;width:100%"
           placeholder="${finiquito ? 'Por ejemplo: cierre de operaciones del cliente' : tipo === 'retiro' ? 'Por ejemplo: el cliente dejará de usar la app' : 'Por ejemplo: el cliente regresa'}"></textarea>
         ${finiquito ? `
@@ -82,6 +110,13 @@ export async function solicitarSalida(service: ClientesService, s: SuscripcionDe
         return false;
       }
       const datos: Parameters<ClientesService['solicitarSalida']>[1] = { tipo, motivo };
+      if (conMotivo) {
+        datos.motivo_salida = (document.getElementById('sl-motivo-salida') as HTMLSelectElement).value;
+        if (!datos.motivo_salida) {
+          Swal.showValidationMessage('Elige el motivo de salida del cliente.');
+          return false;
+        }
+      }
       if (finiquito) {
         const referencia = (document.getElementById('sl-ref') as HTMLInputElement).value.trim();
         const confirmacion = (document.getElementById('sl-slug') as HTMLInputElement).value.trim();
