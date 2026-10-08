@@ -8,12 +8,14 @@ import { AuthService } from '../../core/services/auth.service';
 import { CatalogoService } from '../../core/services/catalogo.service';
 import type { ExtraCatalogo, ModuloCatalogo, PlanCatalogo, ProductoCatalogo } from '../../core/models/panel.model';
 import { COLOR_PRIMARIO, etiquetaLimite, mensajeError } from '../clientes/panel-ui';
+import { mostrarFichaPlanes } from '../planes/planes-ui';
 
 interface EdicionPlan {
   producto: ProductoCatalogo;
   esNuevo: boolean;
   codigo: string;
   nombre: string;
+  descripcion: string;
   orden: number;
   activo: boolean;
   modulos: Set<string>;
@@ -104,6 +106,11 @@ export class CatalogoProductosComponent implements OnInit {
 
   // ── Planes ────────────────────────────────────────────────────────────
 
+  /** (05-oct-2026) Tabla comparativa de planes, la misma que se ve desde el cliente. */
+  fichaPlanes(p: ProductoCatalogo): void {
+    void mostrarFichaPlanes({ ...p, planes: p.planes.filter(pl => pl.activo !== false), extras: p.extras.filter(x => x.activo !== false) });
+  }
+
   nuevoPlan(p: ProductoCatalogo): void {
     this.abrirPlan(p, null);
   }
@@ -129,6 +136,7 @@ export class CatalogoProductosComponent implements OnInit {
       esNuevo: !plan,
       codigo: plan?.codigo ?? '',
       nombre: plan?.nombre ?? '',
+      descripcion: plan?.descripcion ?? '',
       orden: plan?.orden ?? (Math.max(0, ...p.planes.map(x => x.orden ?? 0)) + 1),
       activo: plan?.activo ?? true,
       modulos: new Set(plan?.modulos ?? []),
@@ -165,7 +173,8 @@ export class CatalogoProductosComponent implements OnInit {
       const ok = await Swal.fire({
         icon: 'warning',
         title: `Este cambio afecta a ${e.clientes} cliente(s)`,
-        text: 'Sus módulos y límites cambiarán en sus apps en menos de un minuto. No se borra ningún dato.',
+        text: 'Sus módulos y límites cambiarán en sus apps en menos de un minuto. No se borra ningún dato. '
+          + 'Un plan con clientes solo puede agregar módulos o ampliar límites; para reducir, crea otro plan y cambia a cada cliente con una solicitud.',
         showCancelButton: true, confirmButtonText: 'Aplicar a todos', cancelButtonText: 'Cancelar',
         confirmButtonColor: COLOR_PRIMARIO, reverseButtons: true,
       });
@@ -178,7 +187,7 @@ export class CatalogoProductosComponent implements OnInit {
     }
 
     const plan: Partial<PlanCatalogo> = {
-      codigo: e.codigo.trim(), nombre: e.nombre.trim(), orden: e.orden,
+      codigo: e.codigo.trim(), nombre: e.nombre.trim(), descripcion: e.descripcion.trim() || null, orden: e.orden,
       modulos: e.producto.modulos.length ? e.producto.modulos.map(m => m.clave).filter(c => e.modulos.has(c)) : null,
       limites, ...(e.esNuevo ? {} : { activo: e.activo }),
     };

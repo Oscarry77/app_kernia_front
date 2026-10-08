@@ -114,6 +114,11 @@
   &--activo   { background: rgba(76, 175, 125, 0.18); color: #7fdba8; }
   &--inactivo { background: rgba(240, 97, 111, 0.16); color: #f5a1ab; }
   &--aplicado { background: rgba(232, 163, 61, 0.18); color: #f0be74; }
+
+  // (05-oct-2026) Tipo de cliente no comercial.
+  &--demo         { background: rgba(91, 155, 213, 0.18); color: #9cc4ea; }
+  &--capacitacion { background: rgba(155, 125, 220, 0.20); color: #c5b3f0; }
+  &--prueba       { background: rgba(150, 150, 160, 0.20); color: #c4c6cc; }
 }
 
 .modal-overlay {
@@ -219,4 +224,11 @@ input, select, textarea {
 
   &--error { background: rgba(240, 97, 111, 0.12); color: v.$danger; }
   &--info  { background: v.$primary-light; color: v.$primary; }
+}
+
+// (05-oct-2026) Subtítulo de sección dentro de una página.
+.subtitulo {
+  margin: v.$spacing-sm 0 0;
+  font-size: v.$font-size-base;
+  color: v.$text-primary;
 }

@@ -98,3 +98,6 @@ tr.inactivo td { opacity: 0.55; }
   font-size: v.$font-size-sm;
   margin-bottom: v.$spacing-md;
 }
+
+// (05-oct-2026) Descripción comercial del plan a todo lo ancho.
+.campo--doble { grid-column: 1 / -1; }

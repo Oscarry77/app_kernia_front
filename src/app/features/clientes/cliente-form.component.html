@@ -11,6 +11,16 @@
 
       <fieldset class="seccion">
         <legend>Tipo de cliente</legend>
+        <div class="form-grid">
+          <div class="campo">
+            <label for="f-tipo">Uso</label>
+            <select id="f-tipo" formControlName="tipo">
+              @for (t of tiposCliente; track t.clave) { <option [value]="t.clave">{{ t.nombre }}</option> }
+            </select>
+            <small class="texto-tenue">{{ ayudaTipo() }}@if (!esAlta && !esSuperadmin) { Solo el superadministrador cambia el tipo. }</small>
+            @if (errorDe('tipo'); as e) { <small class="texto-error">{{ e }}</small> }
+          </div>
+        </div>
         <div class="tipo-persona" role="radiogroup" aria-label="Tipo de persona">
           <label class="tipo-persona__opcion" [class.activa]="tipo() === 'moral'">
             <input type="radio" formControlName="tipo_persona" value="moral" /> Persona moral

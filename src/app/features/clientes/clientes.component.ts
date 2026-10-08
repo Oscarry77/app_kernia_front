@@ -7,7 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ClientesService } from '../../core/services/clientes.service';
 import type { Cliente, SuscripcionDetalle } from '../../core/models/panel.model';
 import { ClienteFormComponent } from './cliente-form.component';
-import { etiquetaEstatus, mensajeError } from './panel-ui';
+import { etiquetaEstatus, mensajeError, etiquetaTipoCliente } from './panel-ui';
 
 /** (02-oct-2026) Lista de expedientes (clientes del modelo v2), con sus apps, y alta de cliente. */
 @Component({
@@ -35,6 +35,8 @@ export class ClientesComponent implements OnInit {
   mostrarForm = signal(false);
 
   readonly etiqueta = etiquetaEstatus;
+
+  readonly etiquetaTipo = etiquetaTipoCliente;
 
   ngOnInit(): void {
     this.cargar();

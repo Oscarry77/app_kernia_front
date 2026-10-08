@@ -182,3 +182,18 @@
 }
 
 .pagos { margin-top: v.$spacing-sm; font-size: v.$font-size-xs; }
+
+// (05-oct-2026) Ficha de planes junto al nombre del plan.
+.btn-icono {
+  background: none;
+  border: 0;
+  padding: 0 4px;
+  color: v.$text-secondary;
+  cursor: pointer;
+  font-size: v.$font-size-base;
+  line-height: 1;
+
+  &:hover { color: v.$primary; }
+}
+
+.alerta .app__acciones-linea .btn { margin-left: 0; }

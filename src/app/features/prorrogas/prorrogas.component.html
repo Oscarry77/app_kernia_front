@@ -1,15 +1,52 @@
 <div class="crud">
   <div class="crud__header">
     <div>
-      <h2 class="crud__title">Prórrogas</h2>
+      <h2 class="crud__title">Autorizaciones</h2>
       <p class="crud__subtitle">
-        Solicitudes de acceso provisional (1 a 6 días) para apps suspendidas por vencimiento. La autoriza una persona del
-        escalafón escribiendo su usuario y contraseña; no puede autorizar su propia solicitud.
+        Lo que espera la firma del escalafón: prórrogas y cambios de plan. Autoriza una persona del escalafón escribiendo su
+        usuario y contraseña; nadie autoriza su propia solicitud.
       </p>
     </div>
     <button class="btn btn--secondary" type="button" (click)="cargar()">Actualizar</button>
   </div>
 
+  @if (veCambios) {
+    <h3 class="subtitulo">Cambios de plan</h3>
+    <div class="crud__tabla-wrap">
+      @if (cambios().length === 0) {
+        <div class="crud__vacio">No hay cambios de plan pendientes.</div>
+      } @else {
+        <table class="crud__tabla">
+          <thead>
+            <tr><th>Cliente</th><th>App</th><th>Cambio</th><th>Motivo</th><th>Pagos</th><th>Solicitó</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (c of cambios(); track c.id) {
+              <tr>
+                <td><a [routerLink]="['/clientes', c.cliente_id]"><strong>{{ c.cliente }}</strong></a></td>
+                <td>{{ c.producto_nombre }}</td>
+                <td>{{ resumenCambio(c) }}</td>
+                <td>{{ c.motivo }}</td>
+                <td>
+                  @if (c.pagos; as pg) {
+                    {{ pg.pagos_registrados }} pago(s)
+                    <div class="texto-tenue">Próximo: {{ pg.fecha_proximo_pago ? (pg.fecha_proximo_pago | date: 'dd/MM/yyyy') : 'sin definir' }}</div>
+                  }
+                </td>
+                <td>{{ c.solicitada_por }}<div class="texto-tenue">{{ c.solicitada_en | date: 'dd/MM/yyyy HH:mm' }}</div></td>
+                <td class="acciones">
+                  <button class="btn btn--primary btn--sm" type="button" (click)="resolverCambio(c, 'autorizar')">Autorizar</button>
+                  <button class="btn btn--secondary btn--sm" type="button" (click)="resolverCambio(c, 'rechazar')">Rechazar</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  }
+
+  <h3 class="subtitulo">Prórrogas</h3>
   <div class="crud__tabla-wrap">
     @if (cargando()) {
       <div class="crud__vacio">Cargando...</div>

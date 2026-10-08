@@ -11,7 +11,11 @@ import type {
   Pago,
   ConPasswordTemporal,
   ProductoCatalogo,
+  ResumenPagos,
+  SolicitudPlan,
   SuscripcionDetalle,
+  TipoCliente,
+  VistaPreviaPlan,
 } from '../models/panel.model';
 
 /** (02-oct-2026) API del panel para clientes y sus apps (modelo v2). */
@@ -37,11 +41,11 @@ export class ClientesService {
     return this.http.get<{ data: CatalogoFiscal }>(`${this.api}/catalogo/fiscal`);
   }
 
-  crear(datos: Partial<DatosFiscales> & { slug: string; notas?: string | null }): Observable<{ data: Cliente<SuscripcionDetalle> }> {
+  crear(datos: Partial<DatosFiscales> & { slug: string; tipo?: TipoCliente; notas?: string | null }): Observable<{ data: Cliente<SuscripcionDetalle> }> {
     return this.http.post<{ data: Cliente<SuscripcionDetalle> }>(`${this.api}/clientes`, datos);
   }
 
-  actualizar(id: number, datos: Partial<DatosFiscales> & { notas?: string | null }): Observable<{ data: Cliente<SuscripcionDetalle> }> {
+  actualizar(id: number, datos: Partial<DatosFiscales> & { tipo?: TipoCliente; notas?: string | null }): Observable<{ data: Cliente<SuscripcionDetalle> }> {
     return this.http.put<{ data: Cliente<SuscripcionDetalle> }>(`${this.api}/clientes/${id}`, datos);
   }
 
@@ -49,8 +53,30 @@ export class ClientesService {
     return this.http.post<ConPasswordTemporal<SuscripcionDetalle>>(`${this.api}/clientes/${clienteId}/suscripciones`, datos);
   }
 
-  cambiarPlan(id: number, plan: string): Observable<{ data: SuscripcionDetalle }> {
-    return this.http.patch<{ data: SuscripcionDetalle }>(`${this.api}/suscripciones/${id}/plan`, { plan });
+  // ── Cambio de plan (05-oct-2026): solicitud + autorización del escalafón ──
+  vistaPreviaPlan(id: number, plan: string): Observable<{ data: VistaPreviaPlan }> {
+    return this.http.get<{ data: VistaPreviaPlan }>(`${this.api}/suscripciones/${id}/plan/vista-previa`, { params: new HttpParams().set('plan', plan) });
+  }
+
+  solicitarCambioPlan(id: number, datos: { plan: string; aplicacion: 'inmediata' | 'renovacion'; motivo: string }): Observable<{ data: SolicitudPlan }> {
+    return this.http.post<{ data: SolicitudPlan }>(`${this.api}/suscripciones/${id}/cambios-plan`, datos);
+  }
+
+  cambiosPlan(id: number): Observable<{ data: SolicitudPlan[] }> {
+    return this.http.get<{ data: SolicitudPlan[] }>(`${this.api}/suscripciones/${id}/cambios-plan`);
+  }
+
+  cambiosPlanPendientes(): Observable<{ data: SolicitudPlan[] }> {
+    return this.http.get<{ data: SolicitudPlan[] }>(`${this.api}/cambios-plan/pendientes`);
+  }
+
+  /** Autorizar o rechazar: exige el correo y la contraseña de quien autoriza. */
+  resolverCambioPlan(id: number, datos: { accion: 'autorizar' | 'rechazar'; email: string; password: string; comentario: string | null }): Observable<{ data: SolicitudPlan; suscripcion: SuscripcionDetalle; aplicada: boolean; pagos: ResumenPagos | null }> {
+    return this.http.post<{ data: SolicitudPlan; suscripcion: SuscripcionDetalle; aplicada: boolean; pagos: ResumenPagos | null }>(`${this.api}/cambios-plan/${id}/resolver`, datos);
+  }
+
+  cancelarCambioPlan(id: number, motivo: string): Observable<{ data: SolicitudPlan }> {
+    return this.http.post<{ data: SolicitudPlan }>(`${this.api}/cambios-plan/${id}/cancelar`, { motivo });
   }
 
   agregarExtra(id: number, extra: string, cantidad: number, motivo: string): Observable<{ data: SuscripcionDetalle }> {

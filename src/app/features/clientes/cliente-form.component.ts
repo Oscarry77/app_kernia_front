@@ -5,8 +5,10 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import type { HttpErrorResponse } from '@angular/common/http';
 
+import { AuthService } from '../../core/services/auth.service';
 import { ClientesService } from '../../core/services/clientes.service';
-import type { CatalogoFiscal, Cliente, SuscripcionDetalle, TipoPersona } from '../../core/models/panel.model';
+import type { CatalogoFiscal, Cliente, SuscripcionDetalle, TipoCliente, TipoPersona } from '../../core/models/panel.model';
+import { TIPOS_CLIENTE } from './panel-ui';
 
 /**
  * (02-oct-2026) Alta y edición de un cliente con los datos de la Constancia de
@@ -29,6 +31,7 @@ export class ClienteFormComponent implements OnInit {
 
   private fb = inject(FormBuilder);
   private service = inject(ClientesService);
+  private auth = inject(AuthService);
 
   catalogo = signal<CatalogoFiscal | null>(null);
   guardando = signal(false);
@@ -43,8 +46,15 @@ export class ClienteFormComponent implements OnInit {
 
   readonly hoy = new Date().toISOString().slice(0, 10);
 
+  // (05-oct-2026) Tipo de cliente: prueba solo lo asigna el superadmin; al editar, solo él lo cambia.
+  readonly esSuperadmin = this.auth.esSuperadmin();
+  readonly tiposCliente = TIPOS_CLIENTE.filter(t => t.clave !== 'prueba' || this.esSuperadmin);
+  tipoCliente = signal<TipoCliente>('comercial');
+  ayudaTipo = computed(() => TIPOS_CLIENTE.find(t => t.clave === this.tipoCliente())?.ayuda ?? '');
+
   form = this.fb.group({
     slug: ['', [Validators.pattern(/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/)]],
+    tipo: ['comercial' as TipoCliente],
     tipo_persona: ['moral' as TipoPersona, Validators.required],
     rfc: ['', Validators.required],
     razon_social: [''],
@@ -90,9 +100,19 @@ export class ClienteFormComponent implements OnInit {
         tipo_persona: f?.tipo_persona ?? 'moral',
         estatus_padron: f?.estatus_padron ?? 'activo',
         notas: this.cliente.notas ?? '',
+        tipo: this.cliente.tipo ?? 'comercial',
       });
       this.form.controls.slug.disable();
+      if (!this.esSuperadmin) this.form.controls.tipo.disable();
     }
+
+    this.tipoCliente.set(this.form.controls.tipo.value ?? 'comercial');
+    this.form.controls.tipo.valueChanges.subscribe(t => {
+      this.tipoCliente.set(t ?? 'comercial');
+      // En el alta, el slug lleva el prefijo del tipo (demo-, cap-).
+      const slug = this.form.controls.slug;
+      if (this.esAlta && slug.value) slug.setValue(this.conPrefijo(slug.value));
+    });
 
     this.tipo.set(this.form.controls.tipo_persona.value ?? 'moral');
     this.form.controls.tipo_persona.valueChanges.subscribe(t => {
@@ -112,10 +132,18 @@ export class ClienteFormComponent implements OnInit {
     const base = this.tipo() === 'moral'
       ? this.form.controls.nombre_comercial.value || this.form.controls.razon_social.value
       : `${this.form.controls.nombres.value ?? ''} ${this.form.controls.primer_apellido.value ?? ''}`;
-    slug.setValue(
+    slug.setValue(this.conPrefijo(
       (base ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
         .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 63),
-    );
+    ));
+  }
+
+  /** Quita cualquier prefijo de tipo y pone el del tipo elegido. */
+  private conPrefijo(slug: string): string {
+    const prefijos = TIPOS_CLIENTE.map(t => t.prefijo).filter((p): p is string => !!p);
+    const base = prefijos.reduce((s, p) => (s.startsWith(p) ? s.slice(p.length) : s), slug);
+    const prefijo = TIPOS_CLIENTE.find(t => t.clave === this.tipoCliente())?.prefijo ?? '';
+    return (prefijo + base).slice(0, 63);
   }
 
   errorDe(campo: string): string | null {
@@ -140,7 +168,7 @@ export class ClienteFormComponent implements OnInit {
       : ['razon_social', 'regimen_capital'];
     const datos: Record<string, string | null> = {};
     for (const [k, v] of Object.entries(crudo)) {
-      if (delOtroTipo.includes(k) || (k === 'slug' && !this.esAlta)) continue;
+      if (delOtroTipo.includes(k) || (k === 'slug' && !this.esAlta) || (k === 'tipo' && !this.esAlta && !this.esSuperadmin)) continue;
       datos[k] = typeof v === 'string' && v.trim() !== '' ? v.trim() : null;
     }
 

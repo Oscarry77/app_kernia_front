@@ -9,10 +9,12 @@ import Swal from 'sweetalert2';
 import { AclService } from '../../core/services/acl.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ClientesService } from '../../core/services/clientes.service';
-import type { Cliente, MotivoProrroga, Pago, ProductoCatalogo, Prorroga, SuscripcionDetalle } from '../../core/models/panel.model';
+import type { Cliente, MotivoProrroga, Pago, ProductoCatalogo, Prorroga, SolicitudPlan, SuscripcionDetalle } from '../../core/models/panel.model';
 import { etiquetaEstadoProrroga, resolverProrroga, solicitarProrroga } from '../prorrogas/prorroga-ui';
+import { cancelarCambioPlan, mostrarFichaPlanes, resolverCambioPlan, resumenSolicitud, solicitarCambioPlan } from '../planes/planes-ui';
+import type { Observable } from 'rxjs';
 import { ClienteFormComponent } from './cliente-form.component';
-import { COLOR_PRIMARIO, etiquetaDias, etiquetaEstatus, etiquetaLimite, mensajeError, mostrarPasswordUnaVez } from './panel-ui';
+import { COLOR_PRIMARIO, etiquetaDias, etiquetaEstatus, etiquetaLimite, mensajeError, mostrarPasswordUnaVez, etiquetaTipoCliente } from './panel-ui';
 
 interface EdicionVigencia {
   s: SuscripcionDetalle;
@@ -66,6 +68,7 @@ export class ClienteDetalleComponent implements OnInit {
   error = signal<string | null>(null);
 
   readonly etiqueta = etiquetaEstatus;
+  readonly etiquetaTipo = etiquetaTipoCliente;
   readonly etiquetaLimite = etiquetaLimite;
   readonly etiquetaDias = etiquetaDias;
   readonly modalidades = ['mensual', 'trimestral', 'semestral', 'anual'];
@@ -216,19 +219,26 @@ export class ClienteDetalleComponent implements OnInit {
 
   // ── Acciones por suscripción ──────────────────────────────────────────
 
-  async cambiarPlan(s: SuscripcionDetalle, codigo: string): Promise<void> {
-    if (!codigo || codigo === s.plan) return;
-    const plan = this.producto(s.producto)?.planes.find(p => p.codigo === codigo);
-    const ok = await Swal.fire({
-      icon: 'question',
-      title: `¿Cambiar a ${plan?.nombre ?? codigo}?`,
-      text: 'Los módulos y límites del cliente cambiarán en su app en menos de un minuto. No se borra ningún dato.',
-      showCancelButton: true, confirmButtonText: 'Cambiar plan', cancelButtonText: 'Cancelar',
-      confirmButtonColor: COLOR_PRIMARIO, reverseButtons: true,
-    });
-    if (!ok.isConfirmed) { this.cargar(); return; }
+  // ── Plan (05-oct-2026): ficha y cambio por solicitud con autorización del escalafón ──
 
-    this.ejecutar(s.id, this.service.cambiarPlan(s.id, codigo), 'Plan actualizado');
+  readonly resumenCambio = resumenSolicitud;
+
+  async verPlanes(s: SuscripcionDetalle): Promise<void> {
+    const p = this.producto(s.producto);
+    if (p) await mostrarFichaPlanes(p, s.plan);
+  }
+
+  async pedirCambioPlan(s: SuscripcionDetalle): Promise<void> {
+    const p = this.producto(s.producto);
+    if (p && await solicitarCambioPlan(this.service, s, p)) this.cargar();
+  }
+
+  async resolverCambio(s: SuscripcionDetalle, cp: SolicitudPlan, accion: 'autorizar' | 'rechazar'): Promise<void> {
+    if (await resolverCambioPlan(this.service, cp, accion, `${this.cliente()?.nombre ?? ''} · ${s.producto_nombre}`)) this.cargar();
+  }
+
+  async cancelarCambio(cp: SolicitudPlan): Promise<void> {
+    if (await cancelarCambioPlan(this.service, cp)) this.cargar();
   }
 
   async moverExtra(s: SuscripcionDetalle, extra: { codigo: string; nombre: string; total: number }, signo: 1 | -1): Promise<void> {
@@ -528,7 +538,7 @@ export class ClienteDetalleComponent implements OnInit {
     return r.isConfirmed ? String(r.value).trim() : null;
   }
 
-  private ejecutar(id: number, accion: ReturnType<ClientesService['cambiarPlan']>, exito: string): void {
+  private ejecutar(id: number, accion: Observable<unknown>, exito: string): void {
     this.ocupado.set(id);
     accion.subscribe({
       next: () => {

@@ -73,3 +73,15 @@ export function etiquetaDias(dias: number | null): string {
   if (dias === 1) return 'Vence mañana';
   return `${dias} días`;
 }
+
+/** (05-oct-2026) Tipo de cliente. Solo los no comerciales llevan etiqueta visible. */
+export const TIPOS_CLIENTE: { clave: 'comercial' | 'demo' | 'capacitacion' | 'prueba'; nombre: string; prefijo: string | null; ayuda: string }[] = [
+  { clave: 'comercial', nombre: 'Comercial', prefijo: null, ayuda: 'Cliente que paga: vigencias, avisos y suspensión automática.' },
+  { clave: 'demo', nombre: 'Demo', prefijo: 'demo-', ayuda: 'Para demostraciones a prospectos. Sin cobro ni vigencia; lo ven todos los vendedores.' },
+  { clave: 'capacitacion', nombre: 'Capacitación', prefijo: 'cap-', ayuda: 'Para que los operadores practiquen. Sin cobro ni vigencia; lo ven todos los vendedores.' },
+  { clave: 'prueba', nombre: 'Prueba', prefijo: null, ayuda: 'Datos técnicos de pruebas e interno. Solo lo ve el superadministrador.' },
+];
+
+export function etiquetaTipoCliente(tipo: string | null | undefined): string {
+  return TIPOS_CLIENTE.find(t => t.clave === tipo)?.nombre ?? 'Comercial';
+}

@@ -34,7 +34,7 @@
         <thead>
           <tr>
             <th>Cliente</th>
-            <th>Tipo</th>
+            <th>Persona</th>
             <th>Slug</th>
             <th>RFC</th>
             <th>Apps contratadas</th>
@@ -46,6 +46,7 @@
             <tr class="fila-clic" (click)="abrir(c)" tabindex="0" (keyup.enter)="abrir(c)">
               <td>
                 <strong>{{ c.nombre }}</strong>
+                @if (c.tipo && c.tipo !== 'comercial') { <span [class]="'badge badge--' + c.tipo">{{ etiquetaTipo(c.tipo) }}</span> }
                 @if (c.nombre_comercial) { <div class="texto-tenue">{{ c.nombre_comercial }}</div> }
                 @if (!c.datos_fiscales_completos) { <div class="pendiente">Datos fiscales pendientes</div> }
               </td>

@@ -36,6 +36,11 @@ export class AuthService {
     return permisos.includes('*') || permisos.includes(permiso);
   }
 
+  /** (05-oct-2026) Solo el superadmin cambia el tipo de cliente y ve los de prueba. */
+  esSuperadmin(): boolean {
+    return this._user()?.rol === 'superadmin';
+  }
+
   /** Los permisos ya se conocen (una sesión anterior a la fase 3 no los traía). */
   perfilCargado(): boolean {
     return Array.isArray(this._user()?.permisos);

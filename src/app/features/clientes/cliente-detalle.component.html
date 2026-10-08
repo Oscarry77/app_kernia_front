@@ -13,6 +13,9 @@
         <h2 class="crud__title">
           {{ c.nombre }}
           <span class="badge" [class.badge--activo]="c.estatus === 'activo'" [class.badge--inactivo]="c.estatus !== 'activo'">{{ etiqueta(c.estatus) }}</span>
+          @if (c.tipo && c.tipo !== 'comercial') {
+            <span [class]="'badge badge--' + c.tipo" title="Sin cobro ni vigencia">{{ etiquetaTipo(c.tipo) }}</span>
+          }
         </h2>
         <p class="crud__subtitle">
           {{ c.tipo_persona === 'moral' ? 'Persona moral' : c.tipo_persona === 'fisica' ? 'Persona física' : 'Tipo de persona sin definir' }}
@@ -103,16 +106,10 @@
             <div>
               <dt>Plan</dt>
               <dd>
+                <!-- (05-oct-2026) El plan ya no se cambia desde un selector: se solicita y lo autoriza el escalafón. -->
+                {{ s.plan_nombre || s.plan || (producto(s.producto)?.planes?.length ? 'Sin plan' : 'Sin catálogo de planes') }}
                 @if (producto(s.producto)?.planes?.length) {
-                  <select [value]="s.plan ?? ''" (change)="cambiarPlan(s, $any($event.target).value)"
-                          [disabled]="ocupado() === s.id || s.estatus_almacenado !== 'activo' || !puede('suscripciones.gestionar')" aria-label="Plan">
-                    @if (!s.plan) { <option value="" disabled>Sin plan</option> }
-                    @for (p of producto(s.producto)!.planes; track p.codigo) {
-                      <option [value]="p.codigo">{{ p.nombre }}</option>
-                    }
-                  </select>
-                } @else {
-                  {{ s.plan || 'Sin catálogo de planes' }}
+                  <button class="btn-icono" type="button" (click)="verPlanes(s)" title="Ver la ficha de planes" aria-label="Ver la ficha de planes">ⓘ</button>
                 }
               </dd>
             </div>
@@ -140,6 +137,26 @@
             }
 
           </dl>
+
+          @if (s.cambio_plan; as cp) {
+            <div class="alerta" [class.alerta--advertencia]="cp.estado === 'solicitada'" [class.alerta--info]="cp.estado === 'programada'">
+              <b>Cambio de plan {{ cp.estado === 'programada' ? 'programado' : 'pendiente de autorización' }}:</b> {{ resumenCambio(cp) }}.
+              <span class="texto-tenue">Solicitó {{ cp.solicitada_por }}@if (cp.resuelta_por) { · autorizó {{ cp.resuelta_por }} }.</span>
+              @if (puede('planes.solicitar')) {
+                <div class="app__acciones-linea">
+                  @if (cp.estado === 'solicitada') {
+                    <button class="btn btn--primary btn--sm" type="button" (click)="resolverCambio(s, cp, 'autorizar')">Autorizar</button>
+                    <button class="btn btn--secondary btn--sm" type="button" (click)="resolverCambio(s, cp, 'rechazar')">Rechazar</button>
+                  }
+                  <button class="btn btn--secondary btn--sm" type="button" (click)="cancelarCambio(cp)">Cancelar solicitud</button>
+                </div>
+              }
+            </div>
+          } @else if (puede('planes.solicitar') && s.estatus_almacenado === 'activo' && producto(s.producto)?.planes?.length) {
+            <div class="app__acciones-linea">
+              <button class="btn btn--secondary btn--sm" type="button" (click)="pedirCambioPlan(s)" [disabled]="ocupado() === s.id">Cambiar plan</button>
+            </div>
+          }
 
           <div class="app__bloque vigencia">
             <div class="vigencia__titulo">

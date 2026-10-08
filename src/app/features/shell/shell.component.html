@@ -12,7 +12,7 @@
     <nav class="admin-shell__nav">
       <a routerLink="/clientes" routerLinkActive="active">Clientes</a>
       <a routerLink="/vigencias" routerLinkActive="active">Vigencias</a>
-      @if (puede('prorrogas.solicitar')) { <a routerLink="/prorrogas" routerLinkActive="active">Prórrogas</a> }
+      @if (puede('prorrogas.solicitar')) { <a routerLink="/prorrogas" routerLinkActive="active">Autorizaciones</a> }
       <a routerLink="/catalogo/productos" routerLinkActive="active">Productos y planes</a>
       @if (puede('operadores.gestionar')) { <a routerLink="/operadores" routerLinkActive="active">Operadores</a> }
       @if (puede('escalafon.gestionar')) { <a routerLink="/escalafon" routerLinkActive="active">Escalafón</a> }

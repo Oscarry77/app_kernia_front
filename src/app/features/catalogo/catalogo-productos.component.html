@@ -2,7 +2,8 @@
   <div class="crud__header">
     <div>
       <h2 class="crud__title">Productos y planes</h2>
-      <p class="crud__subtitle">Las apps que renta Kernia, sus módulos, planes y extras. Cambiar un plan afecta a todos los clientes que lo tienen.</p>
+      <p class="crud__subtitle">Las apps que renta Kernia, sus módulos, planes y extras. Cambiar un plan afecta a todos los clientes que lo tienen;
+        un plan con clientes no puede perder módulos ni reducir límites.</p>
     </div>
   </div>
 
@@ -43,7 +44,10 @@
       <div class="bloque">
         <div class="bloque__titulo">
           <h4>Planes</h4>
-          <button class="btn btn--secondary btn--sm" type="button" (click)="nuevoPlan(p)" [hidden]="!puede('catalogo.gestionar')">+ Nuevo plan</button>
+          <div class="chips">
+            @if (p.planes.length) { <button class="btn btn--secondary btn--sm" type="button" (click)="fichaPlanes(p)">Comparar planes</button> }
+            <button class="btn btn--secondary btn--sm" type="button" (click)="nuevoPlan(p)" [hidden]="!puede('catalogo.gestionar')">+ Nuevo plan</button>
+          </div>
         </div>
         @if (p.planes.length === 0) {
           <p class="texto-tenue">Esta app no tiene catálogo de planes.</p>
@@ -55,7 +59,8 @@
             <tbody>
               @for (pl of p.planes; track pl.codigo) {
                 <tr [class.inactivo]="!pl.activo">
-                  <td><strong>{{ pl.nombre }}</strong><div class="texto-tenue"><code>{{ pl.codigo }}</code></div></td>
+                  <td><strong>{{ pl.nombre }}</strong><div class="texto-tenue"><code>{{ pl.codigo }}</code></div>
+                    @if (pl.descripcion) { <div class="texto-tenue">{{ pl.descripcion }}</div> }</td>
                   @if (p.modulos.length) {
                     <td><div class="chips">@for (m of pl.modulos ?? []; track m) { <span class="chip chip--activo">{{ nombreModulo(p, m) }}</span> }</div></td>
                   }
@@ -140,7 +145,8 @@
       </div>
       @if (error()) { <div class="alerta alerta--error">{{ error() }}</div> }
       @if (!e.esNuevo && e.clientes > 0) {
-        <div class="alerta alerta--advertencia">{{ e.clientes }} cliente(s) tienen este plan: los cambios les aplican de inmediato.</div>
+        <div class="alerta alerta--advertencia">{{ e.clientes }} cliente(s) tienen este plan: los cambios les aplican de inmediato.
+          Solo se pueden agregar módulos o ampliar límites.</div>
       }
       <div class="form-grid">
         <div class="campo"><label for="p-codigo">Código <span class="req">*</span></label>
@@ -148,6 +154,8 @@
           <small class="ayuda">{{ e.esNuevo ? 'Minúsculas y guion bajo. No se puede cambiar después.' : 'No se puede cambiar.' }}</small></div>
         <div class="campo"><label for="p-nombre">Nombre <span class="req">*</span></label>
           <input id="p-nombre" type="text" [(ngModel)]="e.nombre" /></div>
+        <div class="campo campo--doble"><label for="p-desc">Descripción comercial</label>
+          <textarea id="p-desc" rows="2" [(ngModel)]="e.descripcion" maxlength="2000" placeholder="Para quién es y qué incluye; la ven todos los operadores"></textarea></div>
         <div class="campo"><label for="p-orden">Orden</label>
           <input id="p-orden" type="number" min="0" [(ngModel)]="e.orden" /></div>
         @if (!e.esNuevo) {

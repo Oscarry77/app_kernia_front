@@ -6,6 +6,8 @@ export type EstatusSuscripcion = 'en_aprovisionamiento' | 'activo' | 'suspendido
 export interface PlanCatalogo {
   codigo: string;
   nombre: string;
+  /** (05-oct-2026) Descripción comercial para la ficha de planes. */
+  descripcion?: string | null;
   modulos: string[] | null;
   limites: Record<string, number | null> | null;
   orden?: number;
@@ -112,6 +114,8 @@ export interface SuscripcionDetalle extends SuscripcionResumen, Vigencia {
   provisionada_en: string | null;
   aviso_intentos: number;
   aviso_error: string | null;
+  /** (05-oct-2026) Cambio de plan pendiente de autorizar o programado. */
+  cambio_plan: SolicitudPlan | null;
 }
 
 export type TipoPersona = 'moral' | 'fisica';
@@ -154,10 +158,14 @@ export interface CatalogoFiscal {
   entidades_federativas: string[];
 }
 
+/** (05-oct-2026) Demo y capacitación quedan fuera de cobro y vigencias; prueba solo la ve el superadmin. */
+export type TipoCliente = 'comercial' | 'demo' | 'capacitacion' | 'prueba';
+
 export interface Cliente<S = SuscripcionResumen> {
   id: number;
   slug: string;
   nombre: string;
+  tipo: TipoCliente;
   tipo_persona: TipoPersona | null;
   rfc: string | null;
   nombre_comercial: string | null;
@@ -247,4 +255,58 @@ export interface RegistroAuditoria {
   antes: Record<string, unknown> | null;
   despues: Record<string, unknown> | null;
   ip: string | null;
+}
+
+// ── Cambio de plan con autorización del escalafón (05-oct-2026) ──
+
+export type EstadoSolicitudPlan = 'solicitada' | 'programada' | 'aplicada' | 'rechazada' | 'cancelada' | 'fallida';
+
+export interface ResumenPagos {
+  modalidad_pago: string | null;
+  fecha_proximo_pago: string | null;
+  dias_restantes: number | null;
+  pagos_registrados: number;
+  ultimo_pago: { fecha: string | null; periodo_hasta: string | null; referencia: string } | null;
+}
+
+export interface SolicitudPlan {
+  id: number;
+  suscripcion_id: number;
+  plan_actual: string | null;
+  plan_actual_nombre: string | null;
+  plan_nuevo: string;
+  plan_nuevo_nombre: string | null;
+  direccion: 'subida' | 'bajada';
+  aplicacion: 'inmediata' | 'renovacion';
+  fecha_efectiva: string | null;
+  motivo: string;
+  estado: EstadoSolicitudPlan;
+  solicitada_por: string | null;
+  resuelta_por: string | null;
+  nivel_autorizacion: number | null;
+  comentario_resolucion: string | null;
+  error: string | null;
+  solicitada_en: string | null;
+  resuelta_en: string | null;
+  aplicada_en: string | null;
+  // Solo en /cambios-plan/pendientes
+  cliente_id?: number;
+  cliente?: string;
+  producto?: string;
+  producto_nombre?: string;
+  pagos?: ResumenPagos;
+}
+
+export interface VistaPreviaPlan {
+  plan_actual: string | null;
+  plan_actual_nombre: string | null;
+  plan_nuevo: string;
+  plan_nuevo_nombre: string;
+  direccion: 'subida' | 'bajada';
+  modulos_gana: string[];
+  modulos_pierde: string[];
+  limites_antes: Record<string, number | null>;
+  limites_despues: Record<string, number | null>;
+  limites_reducidos: string[];
+  fecha_proximo_pago: string | null;
 }
