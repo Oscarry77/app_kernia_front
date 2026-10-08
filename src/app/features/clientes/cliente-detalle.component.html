@@ -88,14 +88,23 @@
             </div>
             <span class="badge"
               [class.badge--activo]="s.estatus === 'activo'"
-              [class.badge--inactivo]="s.estatus === 'suspendido' || s.estatus === 'fallido'"
-              [class.badge--aplicado]="s.estatus === 'en_aprovisionamiento'">{{ etiqueta(s.estatus) }}</span>
+              [class.badge--inactivo]="s.estatus === 'suspendido' || s.estatus === 'fallido' || s.estatus === 'retirado' || s.estatus === 'finiquitado' || s.estatus === 'eliminado'"
+              [class.badge--aplicado]="s.estatus === 'en_aprovisionamiento' || s.estatus === 'en_finiquito'">{{ etiqueta(s.estatus) }}</span>
           </header>
 
           @if (s.aviso_pendiente) {
             <div class="alerta alerta--advertencia">
               La app aún no confirma el cambio a <b>{{ etiqueta(s.aviso_pendiente) }}</b> ({{ s.aviso_intentos }} intento(s)).
               Kernia lo reintenta cada minuto.
+            </div>
+          }
+          @if (s.estatus_almacenado === 'retirado') {
+            <div class="alerta alerta--advertencia">App retirada: nadie del cliente puede entrar. La base y la información se conservan; puede reactivarse con autorización.</div>
+          }
+          @if (s.estatus_almacenado === 'en_finiquito') {
+            <div class="alerta alerta--advertencia">
+              Finiquito en curso: solo el administrador del cliente entra, y solo a «Descargas», hasta el
+              <b>{{ s.descarga_hasta | date: 'dd/MM/yyyy' }}</b>.
             </div>
           }
           @if (s.estatus !== s.estatus_almacenado) {
@@ -155,6 +164,26 @@
           } @else if (puede('planes.solicitar') && s.estatus_almacenado === 'activo' && producto(s.producto)?.planes?.length) {
             <div class="app__acciones-linea">
               <button class="btn btn--secondary btn--sm" type="button" (click)="pedirCambioPlan(s)" [disabled]="ocupado() === s.id">Cambiar plan</button>
+            </div>
+          }
+
+          @if (s.salida; as sl) {
+            <div class="alerta" [class.alerta--advertencia]="sl.estado === 'solicitada'" [class.alerta--info]="sl.estado === 'programada'">
+              <b>{{ etiquetaTipoSalida(sl.tipo) }} {{ sl.estado === 'programada' ? 'programado' : 'pendiente de autorización' }}:</b> {{ resumenSalida(sl) }}.
+              <div>{{ sl.motivo }}</div>
+              @if (sl.conformidad_referencia) {
+                <div class="texto-tenue">Conformidad del cliente ({{ sl.conformidad_tipo === 'documento' ? 'documento firmado' : 'correo' }}): {{ sl.conformidad_referencia }}</div>
+              }
+              <span class="texto-tenue">Solicitó {{ sl.solicitada_por }}@if (sl.resuelta_por) { · autorizó {{ sl.resuelta_por }} }.</span>
+              @if (puede('salidas.solicitar')) {
+                <div class="app__acciones-linea">
+                  @if (sl.estado === 'solicitada') {
+                    <button class="btn btn--primary btn--sm" type="button" (click)="resolverSalida(s, sl, 'autorizar')">Autorizar</button>
+                    <button class="btn btn--secondary btn--sm" type="button" (click)="resolverSalida(s, sl, 'rechazar')">Rechazar</button>
+                  }
+                  <button class="btn btn--secondary btn--sm" type="button" (click)="cancelarSalida(sl)">Cancelar solicitud</button>
+                </div>
+              }
             </div>
           }
 
@@ -311,15 +340,26 @@
             <button class="btn btn--secondary btn--sm" type="button" (click)="verMetricas(s)">
               {{ metricasDe(s.id) ? 'Ocultar métricas' : 'Ver métricas' }}
             </button>
-            @if ((s.estatus_almacenado === 'activo' || s.estatus_almacenado === 'suspendido') && puede('suscripciones.restablecer_admin')) {
+            <!-- (08-oct-2026) También en finiquito, para que el administrador pueda descargar su respaldo (v2.3 §4.1). -->
+            @if ((s.estatus_almacenado === 'activo' || s.estatus_almacenado === 'suspendido' || s.estatus_almacenado === 'en_finiquito') && puede('suscripciones.restablecer_admin')) {
               <button class="btn btn--secondary btn--sm" type="button" (click)="restablecerAdmin(s)"
-                      [disabled]="ocupado() === s.id || s.estatus_almacenado !== 'activo'">Restablecer acceso del administrador</button>
+                      [disabled]="ocupado() === s.id || s.estatus_almacenado === 'suspendido'">Restablecer acceso del administrador</button>
             }
             @if ((s.estatus_almacenado === 'activo' || s.estatus_almacenado === 'suspendido') && puede('suscripciones.estatus')) {
               <button class="btn btn--sm" type="button" (click)="cambiarEstatus(s)" [disabled]="ocupado() === s.id"
                       [class.btn--peligro]="s.estatus_almacenado === 'activo'" [class.btn--primary]="s.estatus_almacenado !== 'activo'">
                 {{ s.estatus_almacenado === 'activo' ? 'Suspender' : 'Reactivar' }}
               </button>
+            }
+            @if (puede('salidas.solicitar') && !s.salida) {
+              @for (op of tiposSalida; track op.tipo) {
+                @if (s.salidas_posibles[op.tipo]; as pos) {
+                  <button class="btn btn--sm" type="button" (click)="pedirSalida(s, op.tipo)" [disabled]="ocupado() === s.id || !pos.permitido"
+                          [title]="pos.razon ?? ''" [class.btn--peligro]="op.tipo !== 'reactivacion'" [class.btn--primary]="op.tipo === 'reactivacion'">
+                    {{ op.texto }}
+                  </button>
+                }
+              }
             }
             @if (s.estatus_almacenado === 'fallido' && puede('suscripciones.gestionar')) {
               <button class="btn btn--primary btn--sm" type="button" (click)="reintentar(s)" [disabled]="ocupado() === s.id">Reintentar alta</button>

@@ -54,6 +54,10 @@ export function etiquetaEstatus(estatus: string): string {
     fallido: 'Fallido',
     cancelado: 'Cancelado',
     baja: 'Baja',
+    retirado: 'Retirado',
+    en_finiquito: 'En finiquito',
+    finiquitado: 'Finiquitado',
+    eliminado: 'Eliminado',
   } as Record<string, string>)[estatus] ?? estatus;
 }
 

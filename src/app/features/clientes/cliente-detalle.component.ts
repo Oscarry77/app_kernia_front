@@ -9,9 +9,10 @@ import Swal from 'sweetalert2';
 import { AclService } from '../../core/services/acl.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ClientesService } from '../../core/services/clientes.service';
-import type { Cliente, MotivoProrroga, Pago, ProductoCatalogo, Prorroga, SolicitudPlan, SuscripcionDetalle } from '../../core/models/panel.model';
+import type { Cliente, MotivoProrroga, Pago, ProductoCatalogo, Prorroga, SolicitudPlan, SolicitudSalida, SuscripcionDetalle, TipoSalida } from '../../core/models/panel.model';
 import { etiquetaEstadoProrroga, resolverProrroga, solicitarProrroga } from '../prorrogas/prorroga-ui';
 import { cancelarCambioPlan, mostrarFichaPlanes, resolverCambioPlan, resumenSolicitud, solicitarCambioPlan } from '../planes/planes-ui';
+import { cancelarSalida, etiquetaTipoSalida, resolverSalida, resumenSalida, solicitarSalida } from '../salidas/salidas-ui';
 import type { Observable } from 'rxjs';
 import { ClienteFormComponent } from './cliente-form.component';
 import { COLOR_PRIMARIO, etiquetaDias, etiquetaEstatus, etiquetaLimite, mensajeError, mostrarPasswordUnaVez, etiquetaTipoCliente } from './panel-ui';
@@ -83,6 +84,15 @@ export class ClienteDetalleComponent implements OnInit {
   prorrogas = signal<Record<number, Prorroga[] | 'cargando'>>({});
   private motivos: { data: MotivoProrroga[]; max_dias: number } | null = null;
   readonly etiquetaProrroga = etiquetaEstadoProrroga;
+
+  // (08-oct-2026) Salida: retirar, reactivar o finiquitar.
+  readonly resumenSalida = resumenSalida;
+  readonly etiquetaTipoSalida = etiquetaTipoSalida;
+  readonly tiposSalida: { tipo: TipoSalida; texto: string }[] = [
+    { tipo: 'reactivacion', texto: 'Reactivar app' },
+    { tipo: 'retiro', texto: 'Retirar app' },
+    { tipo: 'finiquito', texto: 'Finiquitar' },
+  ];
 
   /** Oculta lo que el rol no permite; Kernia valida de nuevo cada acción. */
   puede(permiso: string): boolean {
@@ -239,6 +249,19 @@ export class ClienteDetalleComponent implements OnInit {
 
   async cancelarCambio(cp: SolicitudPlan): Promise<void> {
     if (await cancelarCambioPlan(this.service, cp)) this.cargar();
+  }
+
+  async pedirSalida(s: SuscripcionDetalle, tipo: TipoSalida): Promise<void> {
+    const slug = this.cliente()?.slug;
+    if (slug && await solicitarSalida(this.service, s, tipo, slug)) this.cargar();
+  }
+
+  async resolverSalida(s: SuscripcionDetalle, sol: SolicitudSalida, accion: 'autorizar' | 'rechazar'): Promise<void> {
+    if (await resolverSalida(this.service, sol, accion, `${this.cliente()?.nombre ?? ''} · ${s.producto_nombre}`)) this.cargar();
+  }
+
+  async cancelarSalida(sol: SolicitudSalida): Promise<void> {
+    if (await cancelarSalida(this.service, sol)) this.cargar();
   }
 
   async moverExtra(s: SuscripcionDetalle, extra: { codigo: string; nombre: string; total: number }, signo: 1 | -1): Promise<void> {

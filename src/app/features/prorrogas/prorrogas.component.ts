@@ -6,8 +6,9 @@ import { RouterModule } from '@angular/router';
 import { AclService } from '../../core/services/acl.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ClientesService } from '../../core/services/clientes.service';
-import type { Prorroga, SolicitudPlan } from '../../core/models/panel.model';
+import type { Prorroga, SolicitudPlan, SolicitudSalida } from '../../core/models/panel.model';
 import { resolverCambioPlan, resumenSolicitud } from '../planes/planes-ui';
+import { etiquetaTipoSalida, resolverSalida, resumenSalida } from '../salidas/salidas-ui';
 import { mensajeError } from '../clientes/panel-ui';
 import { resolverProrroga } from './prorroga-ui';
 
@@ -18,6 +19,8 @@ import { resolverProrroga } from './prorroga-ui';
  *
  * (05-oct-2026) "Autorizaciones": también los cambios de plan pendientes,
  * con el resumen de pagos del cliente.
+ *
+ * (08-oct-2026) También las salidas: retiro, reactivación y finiquito.
  */
 @Component({
   selector: 'app-prorrogas',
@@ -36,6 +39,10 @@ export class ProrrogasComponent implements OnInit {
   cambios = signal<SolicitudPlan[]>([]);
   readonly resumenCambio = resumenSolicitud;
   readonly veCambios = this.auth.puede('planes.solicitar');
+  salidas = signal<SolicitudSalida[]>([]);
+  readonly veSalidas = this.auth.puede('salidas.solicitar');
+  readonly resumenSalida = resumenSalida;
+  readonly etiquetaTipoSalida = etiquetaTipoSalida;
   cargando = signal(true);
   error = signal<string | null>(null);
 
@@ -53,10 +60,19 @@ export class ProrrogasComponent implements OnInit {
     if (this.veCambios) {
       this.clientes.cambiosPlanPendientes().subscribe({ next: r => this.cambios.set(r.data), error: () => this.cambios.set([]) });
     }
+    if (this.veSalidas) {
+      this.clientes.salidasPendientes().subscribe({ next: r => this.salidas.set(r.data), error: () => this.salidas.set([]) });
+    }
   }
 
   async resolverCambio(sol: SolicitudPlan, accion: 'autorizar' | 'rechazar'): Promise<void> {
     if (await resolverCambioPlan(this.clientes, sol, accion, `${sol.cliente} · ${sol.producto_nombre}`)) {
+      this.cargar();
+    }
+  }
+
+  async resolverSalida(sol: SolicitudSalida, accion: 'autorizar' | 'rechazar'): Promise<void> {
+    if (await resolverSalida(this.clientes, sol, accion, `${sol.cliente} · ${sol.producto_nombre}`)) {
       this.cargar();
     }
   }

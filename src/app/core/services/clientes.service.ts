@@ -13,7 +13,9 @@ import type {
   ProductoCatalogo,
   ResumenPagos,
   SolicitudPlan,
+  SolicitudSalida,
   SuscripcionDetalle,
+  TipoSalida,
   TipoCliente,
   VistaPreviaPlan,
 } from '../models/panel.model';
@@ -77,6 +79,28 @@ export class ClientesService {
 
   cancelarCambioPlan(id: number, motivo: string): Observable<{ data: SolicitudPlan }> {
     return this.http.post<{ data: SolicitudPlan }>(`${this.api}/cambios-plan/${id}/cancelar`, { motivo });
+  }
+
+  // ── Salida (08-oct-2026): retirar, reactivar o finiquitar, con autorización del escalafón ──
+  solicitarSalida(id: number, datos: { tipo: TipoSalida; motivo: string; conformidad_tipo?: 'correo' | 'documento'; conformidad_referencia?: string; confirmacion_slug?: string }): Observable<{ data: SolicitudSalida }> {
+    return this.http.post<{ data: SolicitudSalida }>(`${this.api}/suscripciones/${id}/salidas`, datos);
+  }
+
+  salidas(id: number): Observable<{ data: SolicitudSalida[] }> {
+    return this.http.get<{ data: SolicitudSalida[] }>(`${this.api}/suscripciones/${id}/salidas`);
+  }
+
+  salidasPendientes(): Observable<{ data: SolicitudSalida[] }> {
+    return this.http.get<{ data: SolicitudSalida[] }>(`${this.api}/salidas/pendientes`);
+  }
+
+  /** Autorizar o rechazar: exige el correo y la contraseña de quien autoriza. */
+  resolverSalida(id: number, datos: { accion: 'autorizar' | 'rechazar'; email: string; password: string; comentario: string | null }): Observable<{ data: SolicitudSalida; suscripcion: SuscripcionDetalle; aplicada: boolean }> {
+    return this.http.post<{ data: SolicitudSalida; suscripcion: SuscripcionDetalle; aplicada: boolean }>(`${this.api}/salidas/${id}/resolver`, datos);
+  }
+
+  cancelarSalida(id: number, motivo: string): Observable<{ data: SolicitudSalida }> {
+    return this.http.post<{ data: SolicitudSalida }>(`${this.api}/salidas/${id}/cancelar`, { motivo });
   }
 
   agregarExtra(id: number, extra: string, cantidad: number, motivo: string): Observable<{ data: SuscripcionDetalle }> {

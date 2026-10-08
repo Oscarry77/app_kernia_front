@@ -3,7 +3,7 @@
     <div>
       <h2 class="crud__title">Autorizaciones</h2>
       <p class="crud__subtitle">
-        Lo que espera la firma del escalafón: prórrogas y cambios de plan. Autoriza una persona del escalafón escribiendo su
+        Lo que espera la firma del escalafón: prórrogas, cambios de plan y salidas (retiro, reactivación y finiquito). Autoriza una persona del escalafón escribiendo su
         usuario y contraseña; nadie autoriza su propia solicitud.
       </p>
     </div>
@@ -37,6 +37,42 @@
                 <td class="acciones">
                   <button class="btn btn--primary btn--sm" type="button" (click)="resolverCambio(c, 'autorizar')">Autorizar</button>
                   <button class="btn btn--secondary btn--sm" type="button" (click)="resolverCambio(c, 'rechazar')">Rechazar</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  }
+
+  @if (veSalidas) {
+    <h3 class="subtitulo">Salidas</h3>
+    <div class="crud__tabla-wrap">
+      @if (salidas().length === 0) {
+        <div class="crud__vacio">No hay salidas pendientes.</div>
+      } @else {
+        <table class="crud__tabla">
+          <thead>
+            <tr><th>Cliente</th><th>App</th><th>Solicitud</th><th>Motivo</th><th>Conformidad</th><th>Solicitó</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (sl of salidas(); track sl.id) {
+              <tr>
+                <td><a [routerLink]="['/clientes', sl.cliente_id]"><strong>{{ sl.cliente }}</strong></a></td>
+                <td>{{ sl.producto_nombre }}</td>
+                <td>{{ resumenSalida(sl) }}</td>
+                <td>{{ sl.motivo }}</td>
+                <td>
+                  @if (sl.conformidad_referencia) {
+                    {{ sl.conformidad_tipo === 'documento' ? 'Documento firmado' : 'Correo' }}
+                    <div class="texto-tenue">{{ sl.conformidad_referencia }}</div>
+                  } @else { — }
+                </td>
+                <td>{{ sl.solicitada_por }}<div class="texto-tenue">{{ sl.solicitada_en | date: 'dd/MM/yyyy HH:mm' }}</div></td>
+                <td class="acciones">
+                  <button class="btn btn--primary btn--sm" type="button" (click)="resolverSalida(sl, 'autorizar')">Autorizar</button>
+                  <button class="btn btn--secondary btn--sm" type="button" (click)="resolverSalida(sl, 'rechazar')">Rechazar</button>
                 </td>
               </tr>
             }

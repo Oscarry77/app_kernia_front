@@ -1,7 +1,9 @@
 // (02-oct-2026) Modelo v2 del panel: clientes (workspaces) y sus suscripciones
 // a cada app. Ninguna respuesta trae credenciales de base ni tokens.
 
-export type EstatusSuscripcion = 'en_aprovisionamiento' | 'activo' | 'suspendido' | 'fallido' | 'cancelado';
+export type EstatusSuscripcion = 'en_aprovisionamiento' | 'activo' | 'suspendido' | 'fallido' | 'cancelado'
+  // (08-oct-2026) Estados de salida, estándar v2.3 §4.1.
+  | 'retirado' | 'en_finiquito' | 'finiquitado' | 'eliminado';
 
 export interface PlanCatalogo {
   codigo: string;
@@ -37,6 +39,8 @@ export interface ProductoCatalogo {
   nombre_corto: string | null;
   descripcion: string | null;
   permite_ws_cntpaq: boolean;
+  /** (08-oct-2026) La app ya reconoce los estados de salida (v2.3 §4.1). */
+  estatus_salida: boolean;
   modo_datos: 'dedicada' | 'compartida';
   modulos: ModuloCatalogo[];
   planes: PlanCatalogo[];
@@ -116,6 +120,12 @@ export interface SuscripcionDetalle extends SuscripcionResumen, Vigencia {
   aviso_error: string | null;
   /** (05-oct-2026) Cambio de plan pendiente de autorizar o programado. */
   cambio_plan: SolicitudPlan | null;
+  /** (08-oct-2026) En `en_finiquito`: último día para descargar el respaldo. */
+  descarga_hasta: string | null;
+  /** (08-oct-2026) Solicitud de salida pendiente de autorizar o programada. */
+  salida: SolicitudSalida | null;
+  /** Qué salidas admite hoy la suscripción; `razon` explica por qué no, si no. */
+  salidas_posibles: Partial<Record<TipoSalida, { permitido: boolean; razon: string | null }>>;
 }
 
 export type TipoPersona = 'moral' | 'fisica';
@@ -309,4 +319,33 @@ export interface VistaPreviaPlan {
   limites_despues: Record<string, number | null>;
   limites_reducidos: string[];
   fecha_proximo_pago: string | null;
+}
+
+/** (08-oct-2026) Salida de una suscripción: retirar la app, reactivarla o finiquitar. */
+export type TipoSalida = 'retiro' | 'reactivacion' | 'finiquito';
+
+export interface SolicitudSalida {
+  id: number;
+  suscripcion_id: number;
+  tipo: TipoSalida;
+  estatus_anterior: EstatusSuscripcion | null;
+  motivo: string;
+  conformidad_tipo: 'correo' | 'documento' | null;
+  conformidad_referencia: string | null;
+  estado: EstadoSolicitudPlan;
+  fecha_efectiva: string | null;
+  solicitada_por: string | null;
+  resuelta_por: string | null;
+  nivel_autorizacion: number | null;
+  comentario_resolucion: string | null;
+  error: string | null;
+  solicitada_en: string | null;
+  resuelta_en: string | null;
+  aplicada_en: string | null;
+  // Solo en /salidas/pendientes
+  cliente_id?: number;
+  cliente?: string;
+  cliente_slug?: string;
+  producto?: string;
+  producto_nombre?: string;
 }
