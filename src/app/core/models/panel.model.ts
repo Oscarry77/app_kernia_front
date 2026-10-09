@@ -3,7 +3,9 @@
 
 export type EstatusSuscripcion = 'en_aprovisionamiento' | 'activo' | 'suspendido' | 'fallido' | 'cancelado'
   // (08-oct-2026) Estados de salida, estándar v2.3 §4.1.
-  | 'retirado' | 'en_finiquito' | 'finiquitado' | 'eliminado';
+  | 'retirado' | 'en_finiquito' | 'finiquitado' | 'eliminado'
+  // (09-oct-2026) Baja de plan v2.2 en curso.
+  | 'en_mantenimiento';
 
 export interface PlanCatalogo {
   codigo: string;
@@ -41,6 +43,8 @@ export interface ProductoCatalogo {
   permite_ws_cntpaq: boolean;
   /** (08-oct-2026) La app ya reconoce los estados de salida (v2.3 §4.1). */
   estatus_salida: boolean;
+  /** (09-oct-2026) La app cumple v2.2: entrega sus empresas y ejecuta bajas con bloqueo. */
+  empresas_v22: boolean;
   modo_datos: 'dedicada' | 'compartida';
   modulos: ModuloCatalogo[];
   planes: PlanCatalogo[];
@@ -269,7 +273,7 @@ export interface RegistroAuditoria {
 
 // ── Cambio de plan con autorización del escalafón (05-oct-2026) ──
 
-export type EstadoSolicitudPlan = 'solicitada' | 'programada' | 'aplicada' | 'rechazada' | 'cancelada' | 'fallida';
+export type EstadoSolicitudPlan = 'solicitada' | 'programada' | 'en_ejecucion' | 'aplicada' | 'rechazada' | 'cancelada' | 'fallida';
 
 export interface ResumenPagos {
   modalidad_pago: string | null;
@@ -299,6 +303,14 @@ export interface SolicitudPlan {
   solicitada_en: string | null;
   resuelta_en: string | null;
   aplicada_en: string | null;
+  // (09-oct-2026) Baja v2.2: empresas que conserva (null = aún no decide), fase en ejecución y resultado.
+  empresas_conservar: number[] | null;
+  fase: 'aviso' | 'mantenimiento' | 'ajustando' | null;
+  fase_desde: string | null;
+  respaldo_id: string | null;
+  empresas_bloqueadas: number[] | null;
+  /** Límite de empresas con el plan nuevo (plan + extras), calculado por Kernia. */
+  max_empresas_nuevo: number | null;
   // Solo en /cambios-plan/pendientes
   cliente_id?: number;
   cliente?: string;
@@ -319,6 +331,7 @@ export interface VistaPreviaPlan {
   limites_despues: Record<string, number | null>;
   limites_reducidos: string[];
   fecha_proximo_pago: string | null;
+  usa_v22: boolean;
 }
 
 /** (08-oct-2026) Salida de una suscripción: retirar la app, reactivarla o finiquitar. */
@@ -380,4 +393,22 @@ export interface ResumenMotivosSalida {
   respuestas_cliente: number;
   calificacion_promedio: number | null;
   recomendaria_pct: number | null;
+}
+
+/** (09-oct-2026) Empresa del cliente según la app (estándar v2.2 §3.1). */
+export interface EmpresaApp {
+  id: number;
+  rfc: string | null;
+  nombre: string;
+  estado: 'activa' | 'inactiva' | 'bloqueada_plan' | 'archivada';
+  creada_en: string | null;
+}
+
+export interface ListaEmpresas {
+  data: EmpresaApp[];
+  cuentan_para_limite: number;
+  /** El límite que aplica la app. */
+  max_empresas: number | null;
+  /** El límite contratado según Kernia (plan + extras). */
+  max_empresas_kernia?: number | null;
 }

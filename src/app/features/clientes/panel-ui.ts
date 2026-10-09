@@ -81,6 +81,7 @@ export function etiquetaEstatus(estatus: string): string {
     en_finiquito: 'En finiquito',
     finiquitado: 'Finiquitado',
     eliminado: 'Eliminado',
+    en_mantenimiento: 'En mantenimiento',
   } as Record<string, string>)[estatus] ?? estatus;
 }
 

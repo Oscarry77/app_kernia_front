@@ -9,6 +9,7 @@ import type {
   DatosFiscales,
   FilaMotivoSalida,
   FilaVigencia,
+  ListaEmpresas,
   MotivoSalida,
   Pago,
   ResumenMotivosSalida,
@@ -63,7 +64,7 @@ export class ClientesService {
     return this.http.get<{ data: VistaPreviaPlan }>(`${this.api}/suscripciones/${id}/plan/vista-previa`, { params: new HttpParams().set('plan', plan) });
   }
 
-  solicitarCambioPlan(id: number, datos: { plan: string; aplicacion: 'inmediata' | 'renovacion'; motivo: string; motivo_salida?: string }): Observable<{ data: SolicitudPlan }> {
+  solicitarCambioPlan(id: number, datos: { plan: string; aplicacion: 'inmediata' | 'renovacion'; motivo: string; motivo_salida?: string; empresas_conservar?: number[] | null }): Observable<{ data: SolicitudPlan }> {
     return this.http.post<{ data: SolicitudPlan }>(`${this.api}/suscripciones/${id}/cambios-plan`, datos);
   }
 
@@ -120,6 +121,20 @@ export class ClientesService {
     let params = new HttpParams();
     for (const [k, v] of Object.entries(filtros)) if (v) params = params.set(k, v);
     return this.http.get<{ data: FilaMotivoSalida[]; resumen: ResumenMotivosSalida }>(`${this.api}/motivos-salida`, { params });
+  }
+
+  // ── Empresas del cliente en una app v2.2 (09-oct-2026) ──
+  empresas(id: number): Observable<ListaEmpresas> {
+    return this.http.get<ListaEmpresas>(`${this.api}/suscripciones/${id}/empresas`);
+  }
+
+  desbloquearEmpresas(id: number, empresas: number[], motivo: string): Observable<ListaEmpresas> {
+    return this.http.post<ListaEmpresas>(`${this.api}/suscripciones/${id}/empresas/desbloquear`, { empresas, motivo });
+  }
+
+  /** null = el cliente aún no decide. */
+  capturarEmpresasPlan(solicitudId: number, empresas: number[] | null): Observable<{ data: SolicitudPlan }> {
+    return this.http.put<{ data: SolicitudPlan }>(`${this.api}/cambios-plan/${solicitudId}/empresas`, { empresas_conservar: empresas });
   }
 
   agregarExtra(id: number, extra: string, cantidad: number, motivo: string): Observable<{ data: SuscripcionDetalle }> {

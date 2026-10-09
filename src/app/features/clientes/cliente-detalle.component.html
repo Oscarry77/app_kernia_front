@@ -98,6 +98,9 @@
               Kernia lo reintenta cada minuto.
             </div>
           }
+          @if (s.estatus_almacenado === 'en_mantenimiento') {
+            <div class="alerta alerta--advertencia">En mantenimiento por el ajuste de plan: nadie del cliente entra hasta que termine (unos minutos).</div>
+          }
           @if (s.estatus_almacenado === 'retirado') {
             <div class="alerta alerta--advertencia">App retirada: nadie del cliente puede entrar. La base y la información se conservan; puede reactivarse con autorización.</div>
           }
@@ -151,11 +154,26 @@
             <div class="alerta" [class.alerta--advertencia]="cp.estado === 'solicitada'" [class.alerta--info]="cp.estado === 'programada'">
               <b>Cambio de plan {{ cp.estado === 'programada' ? 'programado' : 'pendiente de autorización' }}:</b> {{ resumenCambio(cp) }}.
               <span class="texto-tenue">Solicitó {{ cp.solicitada_por }}@if (cp.resuelta_por) { · autorizó {{ cp.resuelta_por }} }.</span>
-              @if (puede('planes.solicitar')) {
+              @if (cp.direccion === 'bajada' && producto(s.producto)?.empresas_v22) {
+                <div>
+                  @if (cp.empresas_conservar === null) {
+                    <b>Sin lista de empresas:</b> si llega la fecha sin capturarla, se bloquean todas hasta que se capture.
+                  } @else {
+                    Conserva <b>{{ cp.empresas_conservar.length }}</b> empresa(s).
+                  }
+                </div>
+              }
+              @if (cp.error && cp.estado !== 'fallida') { <div class="texto-tenue">Último aviso: {{ cp.error }}</div> }
+              @if (puede('planes.solicitar') && cp.estado !== 'en_ejecucion') {
                 <div class="app__acciones-linea">
                   @if (cp.estado === 'solicitada') {
                     <button class="btn btn--primary btn--sm" type="button" (click)="resolverCambio(s, cp, 'autorizar')">Autorizar</button>
                     <button class="btn btn--secondary btn--sm" type="button" (click)="resolverCambio(s, cp, 'rechazar')">Rechazar</button>
+                  }
+                  @if (cp.direccion === 'bajada' && producto(s.producto)?.empresas_v22) {
+                    <button class="btn btn--secondary btn--sm" type="button" (click)="capturarEmpresas(s, cp)">
+                      {{ cp.empresas_conservar === null ? 'Capturar empresas' : 'Cambiar empresas' }}
+                    </button>
                   }
                   <button class="btn btn--secondary btn--sm" type="button" (click)="cancelarCambio(cp)">Cancelar solicitud</button>
                 </div>
@@ -319,6 +337,50 @@
             </div>
           }
 
+          @if (empresasDe(s.id); as em) {
+            <div class="app__bloque">
+              <h4>Empresas del cliente <span class="texto-tenue">(según la app, en vivo)</span></h4>
+              @if (em === 'cargando') {
+                <span class="texto-tenue">Consultando a la app…</span>
+              } @else if (!esLista(em)) {
+                <span class="texto-error">{{ em }}</span>
+              } @else {
+                <p class="texto-tenue">
+                  Usa <b>{{ em.cuentan_para_limite }}</b> de <b>{{ em.max_empresas_kernia ?? 'sin límite' }}</b> contratadas
+                  (activas + inactivas; las bloqueadas y archivadas no cuentan).
+                  @if (em.max_empresas !== em.max_empresas_kernia) { <span class="texto-error">La app aplica {{ em.max_empresas ?? 'sin límite' }}: se actualiza en menos de un minuto.</span> }
+                </p>
+                <table class="crud__tabla">
+                  <thead><tr><th></th><th>Empresa</th><th>RFC</th><th>Estado</th><th>Alta</th></tr></thead>
+                  <tbody>
+                    @for (e of em.data; track e.id) {
+                      <tr>
+                        <td>
+                          @if (e.estado === 'bloqueada_plan' && puede('planes.solicitar')) {
+                            <input type="checkbox" [attr.aria-label]="'Desbloquear ' + e.nombre"
+                                   [checked]="(seleccionDesbloqueo()[s.id] ?? []).includes(e.id)"
+                                   (change)="marcarDesbloqueo(s, e.id, $any($event.target).checked)">
+                          }
+                        </td>
+                        <td>{{ e.nombre }}</td>
+                        <td><code>{{ e.rfc || '—' }}</code></td>
+                        <td><span class="badge" [class.badge--activo]="e.estado === 'activa'" [class.badge--inactivo]="e.estado === 'bloqueada_plan'">{{ etiquetaEmpresa(e.estado) }}</span></td>
+                        <td>{{ e.creada_en ? (e.creada_en | date: 'dd/MM/yyyy') : '—' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+                @if ((seleccionDesbloqueo()[s.id] ?? []).length) {
+                  <div class="app__acciones-linea">
+                    <button class="btn btn--primary btn--sm" type="button" (click)="desbloquear(s)">
+                      Desbloquear {{ (seleccionDesbloqueo()[s.id] ?? []).length }} empresa(s)
+                    </button>
+                  </div>
+                }
+              }
+            </div>
+          }
+
           @if (metricasDe(s.id); as m) {
             <div class="app__bloque">
               <h4>Métricas de uso</h4>
@@ -340,6 +402,11 @@
             <button class="btn btn--secondary btn--sm" type="button" (click)="verMetricas(s)">
               {{ metricasDe(s.id) ? 'Ocultar métricas' : 'Ver métricas' }}
             </button>
+            @if (producto(s.producto)?.empresas_v22) {
+              <button class="btn btn--secondary btn--sm" type="button" (click)="verEmpresas(s)">
+                {{ empresasDe(s.id) ? 'Ocultar empresas' : 'Ver empresas' }}
+              </button>
+            }
             <!-- (08-oct-2026) También en finiquito, para que el administrador pueda descargar su respaldo (v2.3 §4.1). -->
             @if ((s.estatus_almacenado === 'activo' || s.estatus_almacenado === 'suspendido' || s.estatus_almacenado === 'en_finiquito') && puede('suscripciones.restablecer_admin')) {
               <button class="btn btn--secondary btn--sm" type="button" (click)="restablecerAdmin(s)"

@@ -9,10 +9,11 @@ import Swal from 'sweetalert2';
 import { AclService } from '../../core/services/acl.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ClientesService } from '../../core/services/clientes.service';
-import type { Cliente, MotivoProrroga, Pago, ProductoCatalogo, Prorroga, SolicitudPlan, SolicitudSalida, SuscripcionDetalle, TipoSalida } from '../../core/models/panel.model';
+import type { Cliente, ListaEmpresas, MotivoProrroga, Pago, ProductoCatalogo, Prorroga, SolicitudPlan, SolicitudSalida, SuscripcionDetalle, TipoSalida } from '../../core/models/panel.model';
 import { etiquetaEstadoProrroga, resolverProrroga, solicitarProrroga } from '../prorrogas/prorroga-ui';
 import { cancelarCambioPlan, mostrarFichaPlanes, resolverCambioPlan, resumenSolicitud, solicitarCambioPlan } from '../planes/planes-ui';
 import { cancelarSalida, etiquetaTipoSalida, resolverSalida, resumenSalida, solicitarSalida } from '../salidas/salidas-ui';
+import { capturarEmpresasPlan, desbloquearEmpresas, etiquetaEstadoEmpresa } from '../empresas/empresas-ui';
 import type { Observable } from 'rxjs';
 import { ClienteFormComponent } from './cliente-form.component';
 import { COLOR_PRIMARIO, etiquetaDias, etiquetaEstatus, etiquetaLimite, mensajeError, mostrarEnlaceUnaVez, mostrarPasswordUnaVez, etiquetaTipoCliente } from './panel-ui';
@@ -88,6 +89,11 @@ export class ClienteDetalleComponent implements OnInit {
   // (08-oct-2026) Salida: retirar, reactivar o finiquitar.
   readonly resumenSalida = resumenSalida;
   readonly etiquetaTipoSalida = etiquetaTipoSalida;
+  // (09-oct-2026) Empresas del cliente en una app v2.2.
+  empresas = signal<Record<number, ListaEmpresas | 'cargando' | string>>({});
+  seleccionDesbloqueo = signal<Partial<Record<number, number[]>>>({});
+  readonly etiquetaEmpresa = etiquetaEstadoEmpresa;
+
   readonly tiposSalida: { tipo: TipoSalida; texto: string }[] = [
     { tipo: 'reactivacion', texto: 'Reactivar app' },
     { tipo: 'retiro', texto: 'Retirar app' },
@@ -262,6 +268,48 @@ export class ClienteDetalleComponent implements OnInit {
 
   async cancelarSalida(sol: SolicitudSalida): Promise<void> {
     if (await cancelarSalida(this.service, sol)) this.cargar();
+  }
+
+  // ── Empresas (09-oct-2026) ──
+
+  empresasDe(id: number): ListaEmpresas | 'cargando' | string | undefined {
+    return this.empresas()[id];
+  }
+
+  esLista(v: ListaEmpresas | 'cargando' | string): v is ListaEmpresas {
+    return typeof v === 'object';
+  }
+
+  verEmpresas(s: SuscripcionDetalle, recargar = false): void {
+    const actuales = { ...this.empresas() };
+    if (actuales[s.id] && !recargar) {
+      delete actuales[s.id];
+      this.empresas.set(actuales);
+      return;
+    }
+    this.empresas.set({ ...actuales, [s.id]: 'cargando' });
+    this.seleccionDesbloqueo.set({ ...this.seleccionDesbloqueo(), [s.id]: [] });
+    this.service.empresas(s.id).subscribe({
+      next: r => this.empresas.set({ ...this.empresas(), [s.id]: r }),
+      error: (err: HttpErrorResponse) => this.empresas.set({ ...this.empresas(), [s.id]: mensajeError(err, 'La app no respondió.') }),
+    });
+  }
+
+  marcarDesbloqueo(s: SuscripcionDetalle, id: number, marcado: boolean): void {
+    const actual = this.seleccionDesbloqueo()[s.id] ?? [];
+    this.seleccionDesbloqueo.set({ ...this.seleccionDesbloqueo(), [s.id]: marcado ? [...actual, id] : actual.filter(x => x !== id) });
+  }
+
+  async desbloquear(s: SuscripcionDetalle): Promise<void> {
+    const lista = this.empresasDe(s.id);
+    const ids = this.seleccionDesbloqueo()[s.id] ?? [];
+    if (!lista || !this.esLista(lista) || !ids.length) return;
+    const nueva = await desbloquearEmpresas(this.service, s, ids, lista);
+    if (nueva) this.verEmpresas(s, true);
+  }
+
+  async capturarEmpresas(s: SuscripcionDetalle, sol: SolicitudPlan): Promise<void> {
+    if (await capturarEmpresasPlan(this.service, s, sol, sol.max_empresas_nuevo)) this.cargar();
   }
 
   /** (08-oct-2026) Enlace de un solo uso para que el cliente conteste la encuesta de salida. */

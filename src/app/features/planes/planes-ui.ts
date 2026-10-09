@@ -6,7 +6,8 @@ import type { ClientesService } from '../../core/services/clientes.service';
 import type { ProductoCatalogo, ResumenPagos, SolicitudPlan, SuscripcionDetalle, VistaPreviaPlan } from '../../core/models/panel.model';
 import { COLOR_PRIMARIO, escapar, etiquetaLimite, mensajeError } from '../clientes/panel-ui';
 import { motivosSalida, selectMotivoHtml } from '../salidas/salidas-ui';
-import type { MotivoSalida } from '../../core/models/panel.model';
+import type { ListaEmpresas, MotivoSalida } from '../../core/models/panel.model';
+import { activarSeleccion, leerSeleccion, seleccionEmpresasHtml } from '../empresas/empresas-ui';
 
 /**
  * (05-oct-2026) Planes para los operadores: la ficha comparativa de cada
@@ -21,6 +22,7 @@ export function etiquetaEstadoCambio(estado: string): string {
   return ({
     solicitada: 'Pendiente de autorización',
     programada: 'Programado',
+    en_ejecucion: 'En ejecución',
     aplicada: 'Aplicado',
     rechazada: 'Rechazado',
     cancelada: 'Cancelado',
@@ -103,9 +105,9 @@ function vistaPreviaHtml(p: ProductoCatalogo, v: VistaPreviaPlan): string {
     if (antes === despues) continue;
     lineas.push(`<div>${escapar(etiquetaLimite(k))}: ${escapar(valorLimite(antes))} → <b>${escapar(valorLimite(despues))}</b></div>`);
   }
-  if (v.limites_reducidos.includes('max_empresas')) {
-    lineas.push(`<div style="${TENUE};margin-top:4px">Si hoy usa más empresas que el nuevo límite, seguirán operando pero no podrá crear nuevas.
-      (La selección de empresas que se conservan llegará con el estándar v2.2.)</div>`);
+  if (v.limites_reducidos.includes('max_empresas') && !v.usa_v22) {
+    lineas.push(`<div style="${TENUE};margin-top:4px">Si hoy usa más empresas que el nuevo límite, seguirán operando pero no podrá crear nuevas
+      (esta app aún no permite elegir qué empresas se conservan).</div>`);
   }
   return lineas.join('');
 }
@@ -123,6 +125,7 @@ export async function solicitarCambioPlan(service: ClientesService, s: Suscripci
     return false;
   }
   let vista: VistaPreviaPlan | null = null;
+  let empresasMax: number | null = null;
   // (08-oct-2026) Una baja pide el motivo de salida (formulario del asesor).
   let motivos: MotivoSalida[] = [];
   try {
@@ -149,6 +152,7 @@ export async function solicitarCambioPlan(service: ClientesService, s: Suscripci
           <label style="display:block;margin:6px 0"><input type="radio" name="cp-ap" value="inmediata"> En el siguiente corte (00:00 de mañana)</label>
           <div style="${TENUE};font-size:13px">Una baja siempre se aplica a las 00:00. El cliente ve un aviso en su app desde que se autoriza.</div>
           <div style="margin-top:10px">${selectMotivoHtml(motivos, 'cp-motivo-salida')}</div>
+          <div id="cp-empresas" style="margin-top:10px"></div>
         </fieldset>
         <label for="cp-motivo" style="display:block;font-weight:600">Motivo (queda en la bitácora)</label>
         <textarea id="cp-motivo" class="swal2-textarea" style="margin:6px 0 0;width:100%" placeholder="Por ejemplo: el cliente contrató Tesorería"></textarea>
@@ -177,6 +181,20 @@ export async function solicitarCambioPlan(service: ClientesService, s: Suscripci
           caja.innerHTML = vistaPreviaHtml(p, vista);
           if (vista.direccion === 'bajada') {
             aplicacion.style.display = 'block';
+            // (09-oct-2026) Con una app v2.2, el asesor elige qué empresas conserva el cliente.
+            const cajaEmpresas = document.getElementById('cp-empresas')!;
+            cajaEmpresas.innerHTML = '';
+            empresasMax = vista.limites_despues['max_empresas'] ?? null;
+            if (vista.usa_v22 && vista.limites_reducidos.includes('max_empresas')) {
+              cajaEmpresas.textContent = 'Consultando las empresas del cliente…';
+              try {
+                const lista: ListaEmpresas = await firstValueFrom(service.empresas(s.id));
+                cajaEmpresas.innerHTML = seleccionEmpresasHtml(lista, empresasMax, null);
+                activarSeleccion(empresasMax);
+              } catch (err) {
+                cajaEmpresas.textContent = mensajeError(err as HttpErrorResponse, 'No se pudieron consultar las empresas; podrás capturarlas después.');
+              }
+            }
             const renovacion = aplicacion.querySelector<HTMLInputElement>('input[value="renovacion"]')!;
             const etiqueta = document.getElementById('cp-fecha')!;
             renovacion.disabled = !vista.fecha_proximo_pago;
@@ -205,8 +223,17 @@ export async function solicitarCambioPlan(service: ClientesService, s: Suscripci
         Swal.showValidationMessage('Elige el motivo de la baja de plan.');
         return false;
       }
+      const seleccion = vista.direccion === 'bajada' ? leerSeleccion(empresasMax) : undefined;
+      if (typeof seleccion === 'string') {
+        Swal.showValidationMessage(seleccion);
+        return false;
+      }
       try {
-        return await firstValueFrom(service.solicitarCambioPlan(s.id, { plan: vista.plan_nuevo, aplicacion, motivo, ...(motivoSalida ? { motivo_salida: motivoSalida } : {}) }));
+        return await firstValueFrom(service.solicitarCambioPlan(s.id, {
+          plan: vista.plan_nuevo, aplicacion, motivo,
+          ...(motivoSalida ? { motivo_salida: motivoSalida } : {}),
+          ...(seleccion !== undefined ? { empresas_conservar: seleccion } : {}),
+        }));
       } catch (err) {
         Swal.showValidationMessage(mensajeError(err as HttpErrorResponse, 'No se pudo registrar la solicitud.'));
         return false;
@@ -221,7 +248,9 @@ export async function solicitarCambioPlan(service: ClientesService, s: Suscripci
 
 /** Una línea con lo que pide la solicitud: «Corporativo → Básico · baja en la renovación». */
 export function resumenSolicitud(sol: SolicitudPlan): string {
+  const fases: Record<string, string> = { aviso: 'avisando al cliente', mantenimiento: 'en mantenimiento', ajustando: 'la app está ajustando' };
   const cuando = sol.direccion === 'subida' ? 'inmediata'
+    : sol.estado === 'en_ejecucion' ? `en ejecución: ${fases[sol.fase ?? ''] ?? sol.fase}`
     : sol.estado === 'programada' ? `se aplica el ${fecha(sol.fecha_efectiva)}`
     : sol.aplicacion === 'renovacion' ? 'en la renovación' : 'en el siguiente corte (00:00)';
   return `${sol.plan_actual_nombre ?? 'Sin plan'} → ${sol.plan_nuevo_nombre ?? sol.plan_nuevo} · ${sol.direccion === 'subida' ? 'subida' : 'baja'} ${cuando}`;
