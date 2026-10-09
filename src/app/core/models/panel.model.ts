@@ -132,6 +132,24 @@ export interface SuscripcionDetalle extends SuscripcionResumen, Vigencia {
   salida: SolicitudSalida | null;
   /** Qué salidas admite hoy la suscripción; `razon` explica por qué no, si no. */
   salidas_posibles: Partial<Record<TipoSalida, { permitido: boolean; razon: string | null }>>;
+  /** (09-oct-2026) Exportación v2.3 más reciente (solo metadatos). */
+  exportacion: ExportacionResumen | null;
+}
+
+export interface ExportacionResumen {
+  id: number;
+  motivo: 'finiquito' | 'copia' | 'archivo';
+  estado: 'pendiente' | 'processing' | 'ready' | 'failed';
+  intento: number;
+  tamano_bytes: number | null;
+  sha256: string | null;
+  disponible_hasta: string | null;
+  descargada_en: string | null;
+  retencion_hasta: string | null;
+  carta_enviada_en: string | null;
+  clave_enviada_en: string | null;
+  recordatorios: number[];
+  error: string | null;
 }
 
 export type TipoPersona = 'moral' | 'fisica';

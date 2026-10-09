@@ -101,6 +101,29 @@
           @if (s.estatus_almacenado === 'en_mantenimiento') {
             <div class="alerta alerta--advertencia">En mantenimiento por el ajuste de plan: nadie del cliente entra hasta que termine (unos minutos).</div>
           }
+          @if (s.exportacion; as ex) {
+            <div class="alerta" [class.alerta--advertencia]="ex.estado === 'failed'" [class.alerta--info]="ex.estado !== 'failed'">
+              <b>Respaldo del {{ ex.motivo }}:</b>
+              @switch (ex.estado) {
+                @case ('pendiente') { la app aún no lo acepta; Kernia reintenta cada 5 minutos. }
+                @case ('processing') { la app lo está generando (intento {{ ex.intento }}). }
+                @case ('ready') { listo ({{ (ex.tamano_bytes ?? 0) / 1048576 | number: '1.0-2' }} MB). }
+                @case ('failed') { la app no pudo generarlo tras {{ ex.intento }} intentos. Revisa con soporte. }
+              }
+              @if (ex.estado === 'ready') {
+                <div class="texto-tenue">
+                  Carta: {{ ex.carta_enviada_en ? (ex.carta_enviada_en | date: 'dd/MM/yyyy HH:mm') : 'pendiente' }} ·
+                  Contraseña (correo aparte): {{ ex.clave_enviada_en ? (ex.clave_enviada_en | date: 'dd/MM/yyyy HH:mm') : 'pendiente' }} ·
+                  Descarga: {{ ex.descargada_en ? (ex.descargada_en | date: 'dd/MM/yyyy HH:mm') : 'aún no' }}
+                  (plazo {{ ex.disponible_hasta | date: 'dd/MM/yyyy' }})
+                  @if (ex.recordatorios.length) { · Recordatorios: {{ ex.recordatorios.join(' y ') }} días antes }
+                  @if (ex.retencion_hasta) { · En retención hasta {{ ex.retencion_hasta | date: 'dd/MM/yyyy' }} }
+                </div>
+                @if (ex.sha256) { <div class="texto-tenue">Huella SHA-256: <code>{{ ex.sha256 }}</code></div> }
+              }
+              @if (ex.error && ex.estado !== 'ready') { <div class="texto-tenue">{{ ex.error }}</div> }
+            </div>
+          }
           @if (s.estatus_almacenado === 'retirado') {
             <div class="alerta alerta--advertencia">App retirada: nadie del cliente puede entrar. La base y la información se conservan; puede reactivarse con autorización.</div>
           }
