@@ -122,6 +122,33 @@
                 @if (ex.sha256) { <div class="texto-tenue">Huella SHA-256: <code>{{ ex.sha256 }}</code></div> }
               }
               @if (ex.error && ex.estado !== 'ready') { <div class="texto-tenue">{{ ex.error }}</div> }
+              @if (ex.eliminacion) {
+                <div class="texto-tenue">
+                  {{ ex.eliminacion === 'completa' ? 'Respaldo y datos eliminados el ' + (ex.eliminada_en | date: 'dd/MM/yyyy') + ', con constancia en la bitácora.'
+                     : 'Retención terminada: eliminación en curso.' }}
+                </div>
+              }
+              @for (r of ex.solicitudes; track r.id) {
+                <div>
+                  <b>{{ etiquetaRespaldo(r.tipo) }}</b>
+                  {{ r.estado === 'solicitada' ? 'pendiente de autorización' : 'autorizada' }} · {{ r.solicitada_por }}
+                  @if (r.estado === 'autorizada' && r.tipo === 'entrega_soporte' && esMia(r)) {
+                    <button class="btn btn--primary btn--sm" type="button" (click)="bajarRespaldo(r)">
+                      Descargar (hasta {{ r.vigente_hasta | date: 'dd/MM HH:mm' }})
+                    </button>
+                  }
+                </div>
+              }
+              @if (respaldoVigente(s) && puede('respaldos.solicitar')) {
+                <div class="app__acciones-linea">
+                  @if (!tieneAbierta(s, 'reenvio_clave')) {
+                    <button class="btn btn--secondary btn--sm" type="button" (click)="pedirRespaldo(s, 'reenvio_clave')">Reenviar contraseña</button>
+                  }
+                  @if (!tieneAbierta(s, 'entrega_soporte')) {
+                    <button class="btn btn--secondary btn--sm" type="button" (click)="pedirRespaldo(s, 'entrega_soporte')">Entregar respaldo a soporte</button>
+                  }
+                </div>
+              }
             </div>
           }
           @if (s.estatus_almacenado === 'retirado') {

@@ -9,11 +9,12 @@ import Swal from 'sweetalert2';
 import { AclService } from '../../core/services/acl.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ClientesService } from '../../core/services/clientes.service';
-import type { Cliente, ListaEmpresas, MotivoProrroga, Pago, ProductoCatalogo, Prorroga, SolicitudPlan, SolicitudSalida, SuscripcionDetalle, TipoSalida } from '../../core/models/panel.model';
+import type { Cliente, ListaEmpresas, SolicitudRespaldoResumen, TipoSolicitudRespaldo, MotivoProrroga, Pago, ProductoCatalogo, Prorroga, SolicitudPlan, SolicitudSalida, SuscripcionDetalle, TipoSalida } from '../../core/models/panel.model';
 import { etiquetaEstadoProrroga, resolverProrroga, solicitarProrroga } from '../prorrogas/prorroga-ui';
 import { cancelarCambioPlan, mostrarFichaPlanes, resolverCambioPlan, resumenSolicitud, solicitarCambioPlan } from '../planes/planes-ui';
 import { cancelarSalida, etiquetaTipoSalida, resolverSalida, resumenSalida, solicitarSalida } from '../salidas/salidas-ui';
 import { capturarEmpresasPlan, desbloquearEmpresas, etiquetaEstadoEmpresa } from '../empresas/empresas-ui';
+import { descargarRespaldo, etiquetaTipoRespaldo, solicitarRespaldo } from '../respaldos/respaldos-ui';
 import type { Observable } from 'rxjs';
 import { ClienteFormComponent } from './cliente-form.component';
 import { COLOR_PRIMARIO, etiquetaDias, etiquetaEstatus, etiquetaLimite, mensajeError, mostrarEnlaceUnaVez, mostrarPasswordUnaVez, etiquetaTipoCliente } from './panel-ui';
@@ -268,6 +269,31 @@ export class ClienteDetalleComponent implements OnInit {
 
   async cancelarSalida(sol: SolicitudSalida): Promise<void> {
     if (await cancelarSalida(this.service, sol)) this.cargar();
+  }
+
+  // ── Soporte sobre el respaldo (09-oct-2026) ──
+  readonly etiquetaRespaldo = etiquetaTipoRespaldo;
+
+  /** El respaldo existe y aún no se elimina: se puede pedir reenvío o entrega. */
+  respaldoVigente(s: SuscripcionDetalle): boolean {
+    return s.exportacion?.estado === 'ready' && !s.exportacion.eliminacion;
+  }
+
+  tieneAbierta(s: SuscripcionDetalle, tipo: TipoSolicitudRespaldo): boolean {
+    return !!s.exportacion?.solicitudes.some(r => r.tipo === tipo);
+  }
+
+  /** La entrega autorizada solo la descarga quien la pidió. */
+  esMia(r: SolicitudRespaldoResumen): boolean {
+    return r.solicitada_por_id === this.auth.currentUser()?.id;
+  }
+
+  async pedirRespaldo(s: SuscripcionDetalle, tipo: TipoSolicitudRespaldo): Promise<void> {
+    if (s.exportacion && await solicitarRespaldo(this.service, s.exportacion.id, tipo)) this.cargar();
+  }
+
+  async bajarRespaldo(r: SolicitudRespaldoResumen): Promise<void> {
+    if (await descargarRespaldo(this.service, r)) this.cargar();
   }
 
   // ── Empresas (09-oct-2026) ──

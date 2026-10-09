@@ -150,6 +150,33 @@ export interface ExportacionResumen {
   clave_enviada_en: string | null;
   recordatorios: number[];
   error: string | null;
+  /** (09-oct-2026) Eliminación al terminar la retención y solicitudes de soporte abiertas. */
+  eliminacion: 'exportacion_borrada' | 'app_eliminando' | 'base_borrada' | 'completa' | null;
+  eliminada_en: string | null;
+  solicitudes: SolicitudRespaldoResumen[];
+}
+
+export type TipoSolicitudRespaldo = 'reenvio_clave' | 'entrega_soporte';
+
+export interface SolicitudRespaldoResumen {
+  id: number;
+  tipo: TipoSolicitudRespaldo;
+  estado: 'solicitada' | 'autorizada' | 'aplicada' | 'rechazada' | 'cancelada';
+  motivo: string;
+  solicitada_por: string | null;
+  solicitada_por_id: number | null;
+  vigente_hasta: string | null;
+}
+
+/** Fila de GET /respaldos/pendientes (Autorizaciones). */
+export interface SolicitudRespaldoPendiente extends SolicitudRespaldoResumen {
+  exportacion_id: number;
+  suscripcion_id: number;
+  solicitada_en: string | null;
+  cliente_id: number;
+  cliente: string;
+  producto_nombre: string;
+  sha256: string | null;
 }
 
 export type TipoPersona = 'moral' | 'fisica';

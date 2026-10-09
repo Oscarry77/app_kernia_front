@@ -6,7 +6,8 @@ import { RouterModule } from '@angular/router';
 import { AclService } from '../../core/services/acl.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ClientesService } from '../../core/services/clientes.service';
-import type { Prorroga, SolicitudPlan, SolicitudSalida } from '../../core/models/panel.model';
+import type { Prorroga, SolicitudPlan, SolicitudRespaldoPendiente, SolicitudSalida } from '../../core/models/panel.model';
+import { etiquetaTipoRespaldo, resolverRespaldo } from '../respaldos/respaldos-ui';
 import { resolverCambioPlan, resumenSolicitud } from '../planes/planes-ui';
 import { etiquetaTipoSalida, resolverSalida, resumenSalida } from '../salidas/salidas-ui';
 import { mensajeError } from '../clientes/panel-ui';
@@ -41,6 +42,9 @@ export class ProrrogasComponent implements OnInit {
   readonly veCambios = this.auth.puede('planes.solicitar');
   salidas = signal<SolicitudSalida[]>([]);
   readonly veSalidas = this.auth.puede('salidas.solicitar');
+  respaldos = signal<SolicitudRespaldoPendiente[]>([]);
+  readonly veRespaldos = this.auth.puede('respaldos.solicitar');
+  readonly etiquetaRespaldo = etiquetaTipoRespaldo;
   readonly resumenSalida = resumenSalida;
   readonly etiquetaTipoSalida = etiquetaTipoSalida;
   cargando = signal(true);
@@ -60,6 +64,9 @@ export class ProrrogasComponent implements OnInit {
     if (this.veCambios) {
       this.clientes.cambiosPlanPendientes().subscribe({ next: r => this.cambios.set(r.data), error: () => this.cambios.set([]) });
     }
+    if (this.veRespaldos) {
+      this.clientes.respaldosPendientes().subscribe({ next: r => this.respaldos.set(r.data), error: () => this.respaldos.set([]) });
+    }
     if (this.veSalidas) {
       this.clientes.salidasPendientes().subscribe({ next: r => this.salidas.set(r.data), error: () => this.salidas.set([]) });
     }
@@ -67,6 +74,12 @@ export class ProrrogasComponent implements OnInit {
 
   async resolverCambio(sol: SolicitudPlan, accion: 'autorizar' | 'rechazar'): Promise<void> {
     if (await resolverCambioPlan(this.clientes, sol, accion, `${sol.cliente} · ${sol.producto_nombre}`)) {
+      this.cargar();
+    }
+  }
+
+  async resolverRespaldo(r: SolicitudRespaldoPendiente, accion: 'autorizar' | 'rechazar'): Promise<void> {
+    if (await resolverRespaldo(this.clientes, r, accion, `${r.cliente} · ${r.producto_nombre}`)) {
       this.cargar();
     }
   }

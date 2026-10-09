@@ -3,7 +3,7 @@
     <div>
       <h2 class="crud__title">Autorizaciones</h2>
       <p class="crud__subtitle">
-        Lo que espera la firma del escalafón: prórrogas, cambios de plan y salidas (retiro, reactivación y finiquito). Autoriza una persona del escalafón escribiendo su
+        Lo que espera la firma del escalafón: prórrogas, cambios de plan, salidas (retiro, reactivación y finiquito) y respaldos. Autoriza una persona del escalafón escribiendo su
         usuario y contraseña; nadie autoriza su propia solicitud.
       </p>
     </div>
@@ -73,6 +73,36 @@
                 <td class="acciones">
                   <button class="btn btn--primary btn--sm" type="button" (click)="resolverSalida(sl, 'autorizar')">Autorizar</button>
                   <button class="btn btn--secondary btn--sm" type="button" (click)="resolverSalida(sl, 'rechazar')">Rechazar</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  }
+
+  @if (veRespaldos) {
+    <h3 class="subtitulo">Respaldos</h3>
+    <div class="crud__tabla-wrap">
+      @if (respaldos().length === 0) {
+        <div class="crud__vacio">No hay solicitudes de respaldo pendientes.</div>
+      } @else {
+        <table class="crud__tabla">
+          <thead>
+            <tr><th>Cliente</th><th>App</th><th>Solicitud</th><th>Motivo</th><th>Solicitó</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (r of respaldos(); track r.id) {
+              <tr>
+                <td><a [routerLink]="['/clientes', r.cliente_id]"><strong>{{ r.cliente }}</strong></a></td>
+                <td>{{ r.producto_nombre }}</td>
+                <td>{{ etiquetaRespaldo(r.tipo) }}</td>
+                <td>{{ r.motivo }}</td>
+                <td>{{ r.solicitada_por }}<div class="texto-tenue">{{ r.solicitada_en | date: 'dd/MM/yyyy HH:mm' }}</div></td>
+                <td class="acciones">
+                  <button class="btn btn--primary btn--sm" type="button" (click)="resolverRespaldo(r, 'autorizar')">Autorizar</button>
+                  <button class="btn btn--secondary btn--sm" type="button" (click)="resolverRespaldo(r, 'rechazar')">Rechazar</button>
                 </td>
               </tr>
             }

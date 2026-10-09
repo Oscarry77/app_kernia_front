@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, type HttpResponse } from '@angular/common/http';
 import type { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
@@ -10,6 +10,9 @@ import type {
   FilaMotivoSalida,
   FilaVigencia,
   ListaEmpresas,
+  SolicitudRespaldoPendiente,
+  SolicitudRespaldoResumen,
+  TipoSolicitudRespaldo,
   MotivoSalida,
   Pago,
   ResumenMotivosSalida,
@@ -135,6 +138,32 @@ export class ClientesService {
   /** null = el cliente aún no decide. */
   capturarEmpresasPlan(solicitudId: number, empresas: number[] | null): Observable<{ data: SolicitudPlan }> {
     return this.http.put<{ data: SolicitudPlan }>(`${this.api}/cambios-plan/${solicitudId}/empresas`, { empresas_conservar: empresas });
+  }
+
+  // ── Soporte sobre un respaldo (09-oct-2026): autoriza el escalafón ──
+  solicitarRespaldo(exportacionId: number, tipo: TipoSolicitudRespaldo, motivo: string): Observable<{ data: SolicitudRespaldoResumen }> {
+    return this.http.post<{ data: SolicitudRespaldoResumen }>(`${this.api}/exportaciones/${exportacionId}/solicitudes`, { tipo, motivo });
+  }
+
+  respaldosPendientes(): Observable<{ data: SolicitudRespaldoPendiente[] }> {
+    return this.http.get<{ data: SolicitudRespaldoPendiente[] }>(`${this.api}/respaldos/pendientes`);
+  }
+
+  resolverRespaldo(id: number, datos: { accion: 'autorizar' | 'rechazar'; email: string; password: string; comentario: string | null }): Observable<{ data: SolicitudRespaldoResumen }> {
+    return this.http.post<{ data: SolicitudRespaldoResumen }>(`${this.api}/respaldos/${id}/resolver`, datos);
+  }
+
+  cancelarRespaldo(id: number, motivo: string): Observable<{ data: SolicitudRespaldoResumen }> {
+    return this.http.post<{ data: SolicitudRespaldoResumen }>(`${this.api}/respaldos/${id}/cancelar`, { motivo });
+  }
+
+  reintentarRespaldo(id: number): Observable<{ data: SolicitudRespaldoResumen }> {
+    return this.http.post<{ data: SolicitudRespaldoResumen }>(`${this.api}/respaldos/${id}/reintentar`, {});
+  }
+
+  /** El 7z cifrado (con el JWT del operador); el navegador lo guarda. */
+  descargarRespaldo(id: number): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.api}/respaldos/${id}/archivo`, { responseType: 'blob', observe: 'response' });
   }
 
   agregarExtra(id: number, extra: string, cantidad: number, motivo: string): Observable<{ data: SuscripcionDetalle }> {
