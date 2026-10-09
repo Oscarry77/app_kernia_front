@@ -21,10 +21,11 @@ const TITULO: Record<TipoSalida, string> = {
   retiro: 'Retirar app',
   reactivacion: 'Reactivar app',
   finiquito: 'Finiquitar',
+  archivo: 'Archivar empresa',
 };
 
 export function etiquetaTipoSalida(tipo: TipoSalida): string {
-  return ({ retiro: 'Retiro de la app', reactivacion: 'Reactivación', finiquito: 'Finiquito' } as Record<string, string>)[tipo] ?? tipo;
+  return ({ retiro: 'Retiro de la app', reactivacion: 'Reactivación', finiquito: 'Finiquito', archivo: 'Archivo de empresa' } as Record<string, string>)[tipo] ?? tipo;
 }
 
 /** Una línea: «Retiro de la app · se aplica el 09/10/2026 a las 00:00». */
@@ -32,7 +33,8 @@ export function resumenSalida(sol: SolicitudSalida): string {
   const cuando = sol.estado === 'programada'
     ? `se aplica el ${fecha(sol.fecha_efectiva)} a las 00:00`
     : sol.tipo === 'reactivacion' ? 'inmediata al autorizarse' : 'a las 00:00 siguientes a la autorización';
-  return `${etiquetaTipoSalida(sol.tipo)} · ${cuando}`;
+  const empresa = sol.empresa_nombre ? ` (${sol.empresa_nombre})` : '';
+  return `${etiquetaTipoSalida(sol.tipo)}${empresa} · ${cuando}`;
 }
 
 let motivosCache: MotivoSalida[] | null = null;
@@ -59,6 +61,8 @@ function explicacion(tipo: TipoSalida, s: SuscripcionDetalle): string {
         se conservan intactas y la app puede reactivarse con otra autorización. Se aplica a las 00:00 siguientes a la autorización.`;
     case 'reactivacion':
       return `El cliente vuelve a entrar a <b>${escapar(s.producto_nombre)}</b> con su plan y su vigencia actuales en cuanto se autorice.`;
+    case 'archivo':
+      return 'Se exporta la empresa, se entrega al cliente y después se retira de la app.';
     case 'finiquito':
       return `<b>Salida definitiva de ${escapar(s.producto_nombre)}.</b> A las 00:00 siguientes a la autorización, solo el administrador del cliente
         podrá entrar, y únicamente a «Descargas», durante 15 días. Después pierde el acceso y su respaldo queda en retención 90 días

@@ -89,7 +89,11 @@ export class ClientesService {
   }
 
   // ── Salida (08-oct-2026): retirar, reactivar o finiquitar, con autorización del escalafón ──
-  solicitarSalida(id: number, datos: { tipo: TipoSalida; motivo: string; motivo_salida?: string; conformidad_tipo?: 'correo' | 'documento'; conformidad_referencia?: string; confirmacion_slug?: string }): Observable<{ data: SolicitudSalida }> {
+  pedirCopia(id: number): Observable<{ data: { exportacion_id: number; estado: string; disponible_hasta: string } }> {
+    return this.http.post<{ data: { exportacion_id: number; estado: string; disponible_hasta: string } }>(`${this.api}/suscripciones/${id}/copias`, {});
+  }
+
+  solicitarSalida(id: number, datos: { tipo: TipoSalida; empresa_id?: number; motivo: string; motivo_salida?: string; conformidad_tipo?: 'correo' | 'documento'; conformidad_referencia?: string; confirmacion_slug?: string }): Observable<{ data: SolicitudSalida }> {
     return this.http.post<{ data: SolicitudSalida }>(`${this.api}/suscripciones/${id}/salidas`, datos);
   }
 

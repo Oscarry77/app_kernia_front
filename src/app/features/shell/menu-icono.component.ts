@@ -26,6 +26,8 @@ const TRAZOS: Record<string, string> = {
   descarga: 'M12 3v12M7 10l5 5 5-5M5 21h14',
   edificio: 'M4 21V3h11v18M15 9h5v12M8 7h3M8 11h3M8 15h3M2 21h20',
   portapapeles: 'M8 4h8v3H8zM6 5H4v17h16V5h-2M8 12h8M8 16h5',
+  // (09-oct-2026) Nuevos del catálogo común: IMSS (dibujado por HRM).
+  salud: 'M9 3h6v6h6v6h-6v6H9v-6H3V9h6z',
   punto: 'M12 13a1 1 0 100-2 1 1 0 000 2z',
 };
 

@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 
 import type { ClientesService } from '../../core/services/clientes.service';
 import type { EmpresaApp, ListaEmpresas, SolicitudPlan, SuscripcionDetalle } from '../../core/models/panel.model';
+import { motivosSalida, selectMotivoHtml } from '../salidas/salidas-ui';
 import { COLOR_PRIMARIO, escapar, mensajeError } from '../clientes/panel-ui';
 
 /**
@@ -131,4 +132,74 @@ export async function desbloquearEmpresas(service: ClientesService, s: Suscripci
   if (!r.isConfirmed || !r.value) return null;
   await Swal.fire({ icon: 'success', title: 'Empresas desbloqueadas', text: 'El cliente ya puede entrar a ellas, con los mismos accesos que tenían sus usuarios.', confirmButtonColor: COLOR_PRIMARIO });
   return r.value;
+}
+
+/**
+ * (09-oct-2026) Archivar UNA empresa (v2.3 caso A): conformidad del cliente,
+ * motivo de salida y confirmación con el RFC. Lo autoriza el escalafón y se
+ * ejecuta a las 00:00: Kernia la exporta, se la entrega al cliente y, cuando la
+ * descarga o vence el plazo, la app la retira y libera su lugar en el plan.
+ */
+export async function solicitarArchivoEmpresa(service: ClientesService, s: SuscripcionDetalle, e: EmpresaApp): Promise<boolean> {
+  let motivos;
+  try {
+    motivos = await motivosSalida(service);
+  } catch {
+    await Swal.fire({ icon: 'error', title: 'No se pudo cargar la lista de motivos', confirmButtonColor: COLOR_PRIMARIO });
+    return false;
+  }
+  const confirmacion = e.rfc || e.nombre;
+  const r = await Swal.fire({
+    title: `Archivar ${escapar(e.nombre)}`,
+    width: 620,
+    icon: 'warning',
+    html: `
+      <div style="text-align:left">
+        <p style="margin:0 0 12px">A las 00:00 siguientes a la autorización, Kernia <b>exporta esta empresa</b> y se la entrega al cliente
+          (correo con el aviso y, aparte, la contraseña). Cuando la descargue, o a los 15 días, la app la <b>retira</b>: sus datos salen de la base
+          y se libera su lugar en el plan. El respaldo se conserva 90 días. <b>No se puede deshacer.</b> Las demás empresas siguen igual.</p>
+        ${selectMotivoHtml(motivos, 'ar-motivo-salida')}
+        <label for="ar-motivo" style="display:block;font-weight:600">Detalle (queda en la bitácora)</label>
+        <textarea id="ar-motivo" class="swal2-textarea" style="margin:6px 0 12px;width:100%"></textarea>
+        <fieldset style="border:0;padding:0;margin:0 0 12px">
+          <legend style="font-weight:600;padding:0">Conformidad del cliente (obligatoria)</legend>
+          <label style="margin:6px 12px 6px 0"><input type="radio" name="ar-conf" value="correo" checked> Correo del cliente</label>
+          <label style="margin:6px 0"><input type="radio" name="ar-conf" value="documento"> Documento firmado</label>
+          <input id="ar-ref" class="swal2-input" style="margin:6px 0 0;width:100%" maxlength="500" placeholder="Referencia: fecha, remitente y asunto, o folio">
+        </fieldset>
+        <label for="ar-rfc" style="display:block;font-weight:600">Para confirmar, escribe el RFC de la empresa: <code>${escapar(confirmacion)}</code></label>
+        <input id="ar-rfc" class="swal2-input" autocomplete="off" style="margin:6px 0 0;width:100%">
+      </div>`,
+    showCancelButton: true, confirmButtonText: 'Solicitar', cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#b91c1c', reverseButtons: true, focusConfirm: false, showLoaderOnConfirm: true,
+    preConfirm: async () => {
+      const val = (id: string) => (document.getElementById(id) as HTMLInputElement).value.trim();
+      const motivoSalida = (document.getElementById('ar-motivo-salida') as HTMLSelectElement).value;
+      if (!motivoSalida || !val('ar-motivo')) {
+        Swal.showValidationMessage('Elige el motivo y escribe el detalle.');
+        return false;
+      }
+      if (!val('ar-ref')) {
+        Swal.showValidationMessage('Indica la referencia de la conformidad del cliente.');
+        return false;
+      }
+      if (val('ar-rfc').toLowerCase() !== confirmacion.toLowerCase()) {
+        Swal.showValidationMessage(`Escribe exactamente «${confirmacion}» para confirmar.`);
+        return false;
+      }
+      try {
+        return await firstValueFrom(service.solicitarSalida(s.id, {
+          tipo: 'archivo', empresa_id: e.id, motivo: val('ar-motivo'), motivo_salida: motivoSalida,
+          conformidad_tipo: (document.querySelector('input[name="ar-conf"]:checked') as HTMLInputElement | null)?.value === 'documento' ? 'documento' : 'correo',
+          conformidad_referencia: val('ar-ref'), confirmacion_slug: val('ar-rfc'),
+        }));
+      } catch (err) {
+        Swal.showValidationMessage(mensajeError(err as HttpErrorResponse, 'No se pudo registrar la solicitud.'));
+        return false;
+      }
+    },
+  });
+  if (!r.isConfirmed || !r.value) return false;
+  await Swal.fire({ icon: 'success', title: 'Solicitud registrada', text: 'Queda pendiente de autorización en «Autorizaciones».', confirmButtonColor: COLOR_PRIMARIO });
+  return true;
 }

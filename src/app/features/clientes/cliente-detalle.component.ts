@@ -9,11 +9,11 @@ import Swal from 'sweetalert2';
 import { AclService } from '../../core/services/acl.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ClientesService } from '../../core/services/clientes.service';
-import type { Cliente, ListaEmpresas, SolicitudRespaldoResumen, TipoSolicitudRespaldo, MotivoProrroga, Pago, ProductoCatalogo, Prorroga, SolicitudPlan, SolicitudSalida, SuscripcionDetalle, TipoSalida } from '../../core/models/panel.model';
+import type { Cliente, EmpresaApp, ListaEmpresas, SolicitudRespaldoResumen, TipoSolicitudRespaldo, MotivoProrroga, Pago, ProductoCatalogo, Prorroga, SolicitudPlan, SolicitudSalida, SuscripcionDetalle, TipoSalida } from '../../core/models/panel.model';
 import { etiquetaEstadoProrroga, resolverProrroga, solicitarProrroga } from '../prorrogas/prorroga-ui';
 import { cancelarCambioPlan, mostrarFichaPlanes, resolverCambioPlan, resumenSolicitud, solicitarCambioPlan } from '../planes/planes-ui';
 import { cancelarSalida, etiquetaTipoSalida, resolverSalida, resumenSalida, solicitarSalida } from '../salidas/salidas-ui';
-import { capturarEmpresasPlan, desbloquearEmpresas, etiquetaEstadoEmpresa } from '../empresas/empresas-ui';
+import { capturarEmpresasPlan, desbloquearEmpresas, etiquetaEstadoEmpresa, solicitarArchivoEmpresa } from '../empresas/empresas-ui';
 import { descargarRespaldo, etiquetaTipoRespaldo, solicitarRespaldo } from '../respaldos/respaldos-ui';
 import type { Observable } from 'rxjs';
 import { ClienteFormComponent } from './cliente-form.component';
@@ -290,6 +290,30 @@ export class ClienteDetalleComponent implements OnInit {
 
   async pedirRespaldo(s: SuscripcionDetalle, tipo: TipoSolicitudRespaldo): Promise<void> {
     if (s.exportacion && await solicitarRespaldo(this.service, s.exportacion.id, tipo)) this.cargar();
+  }
+
+  /** (09-oct-2026) Copia a petición: una por trimestre incluida. */
+  async pedirCopia(s: SuscripcionDetalle): Promise<void> {
+    const r = await Swal.fire({
+      icon: 'question', title: 'Pedir copia del respaldo',
+      text: 'Kernia pide a la app una copia de toda la información del cliente. Le llega un aviso para descargarla en «Descargas» (15 días) y, aparte, la contraseña. El servicio sigue igual. Hay una copia incluida por trimestre.',
+      showCancelButton: true, confirmButtonText: 'Pedir copia', cancelButtonText: 'Cancelar', confirmButtonColor: COLOR_PRIMARIO, reverseButtons: true,
+    });
+    if (!r.isConfirmed) return;
+    this.ocupado.set(s.id);
+    try {
+      await firstValueFrom(this.service.pedirCopia(s.id));
+      await Swal.fire({ icon: 'success', title: 'Copia solicitada', text: 'Cuando esté lista, el administrador del cliente recibirá el aviso y la contraseña.', confirmButtonColor: COLOR_PRIMARIO });
+      this.cargar();
+    } catch (err) {
+      await this.mostrarError(err as HttpErrorResponse, 'No se pudo pedir la copia.');
+    } finally {
+      this.ocupado.set(null);
+    }
+  }
+
+  async archivarEmpresa(s: SuscripcionDetalle, e: EmpresaApp): Promise<void> {
+    if (await solicitarArchivoEmpresa(this.service, s, e)) this.cargar();
   }
 
   async bajarRespaldo(r: SolicitudRespaldoResumen): Promise<void> {

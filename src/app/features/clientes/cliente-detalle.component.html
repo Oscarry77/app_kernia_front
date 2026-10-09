@@ -103,7 +103,7 @@
           }
           @if (s.exportacion; as ex) {
             <div class="alerta" [class.alerta--advertencia]="ex.estado === 'failed'" [class.alerta--info]="ex.estado !== 'failed'">
-              <b>Respaldo del {{ ex.motivo }}:</b>
+              <b>{{ ex.motivo === 'copia' ? 'Copia a petición' : ex.motivo === 'archivo' ? 'Archivo de ' + (ex.empresa || 'empresa') : 'Respaldo del finiquito' }}:</b>
               @switch (ex.estado) {
                 @case ('pendiente') { la app aún no lo acepta; Kernia reintenta cada 5 minutos. }
                 @case ('processing') { la app lo está generando (intento {{ ex.intento }}). }
@@ -122,6 +122,12 @@
                 @if (ex.sha256) { <div class="texto-tenue">Huella SHA-256: <code>{{ ex.sha256 }}</code></div> }
               }
               @if (ex.error && ex.estado !== 'ready') { <div class="texto-tenue">{{ ex.error }}</div> }
+              @if (ex.archivo) {
+                <div class="texto-tenue">
+                  {{ ex.archivo === 'archivada' ? 'Empresa archivada el ' + (ex.archivada_en | date: 'dd/MM/yyyy') + '; el respaldo se conserva hasta el ' + (ex.retencion_hasta | date: 'dd/MM/yyyy') + '.'
+                     : 'La app está retirando la empresa.' }}
+                </div>
+              }
               @if (ex.eliminacion) {
                 <div class="texto-tenue">
                   {{ ex.eliminacion === 'completa' ? 'Respaldo y datos eliminados el ' + (ex.eliminada_en | date: 'dd/MM/yyyy') + ', con constancia en la bitácora.'
@@ -410,7 +416,7 @@
                   @if (em.max_empresas !== em.max_empresas_kernia) { <span class="texto-error">La app aplica {{ em.max_empresas ?? 'sin límite' }}: se actualiza en menos de un minuto.</span> }
                 </p>
                 <table class="crud__tabla">
-                  <thead><tr><th></th><th>Empresa</th><th>RFC</th><th>Estado</th><th>Alta</th></tr></thead>
+                  <thead><tr><th></th><th>Empresa</th><th>RFC</th><th>Estado</th><th>Alta</th><th></th></tr></thead>
                   <tbody>
                     @for (e of em.data; track e.id) {
                       <tr>
@@ -425,6 +431,11 @@
                         <td><code>{{ e.rfc || '—' }}</code></td>
                         <td><span class="badge" [class.badge--activo]="e.estado === 'activa'" [class.badge--inactivo]="e.estado === 'bloqueada_plan'">{{ etiquetaEmpresa(e.estado) }}</span></td>
                         <td>{{ e.creada_en ? (e.creada_en | date: 'dd/MM/yyyy') : '—' }}</td>
+                        <td>
+                          @if (e.estado !== 'archivada' && producto(s.producto)?.exportacion_v23 && puede('salidas.solicitar') && !s.salida && s.estatus_almacenado === 'activo') {
+                            <button class="btn btn--secondary btn--sm" type="button" (click)="archivarEmpresa(s, e)">Archivar</button>
+                          }
+                        </td>
                       </tr>
                     }
                   </tbody>
@@ -461,6 +472,13 @@
             <button class="btn btn--secondary btn--sm" type="button" (click)="verMetricas(s)">
               {{ metricasDe(s.id) ? 'Ocultar métricas' : 'Ver métricas' }}
             </button>
+            @if (producto(s.producto)?.exportacion_v23 && s.estatus_almacenado === 'activo' && puede('respaldos.solicitar')) {
+              @if (!s.copia.usada && !s.copia.en_curso) {
+                <button class="btn btn--secondary btn--sm" type="button" (click)="pedirCopia(s)" [disabled]="ocupado() === s.id">Pedir copia del respaldo</button>
+              } @else {
+                <span class="texto-tenue">{{ s.copia.en_curso ? 'Copia en curso' : 'Copia del trimestre usada; la siguiente desde el ' + s.copia.siguiente }}</span>
+              }
+            }
             @if (producto(s.producto)?.empresas_v22) {
               <button class="btn btn--secondary btn--sm" type="button" (click)="verEmpresas(s)">
                 {{ empresasDe(s.id) ? 'Ocultar empresas' : 'Ver empresas' }}

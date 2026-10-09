@@ -45,6 +45,8 @@ export interface ProductoCatalogo {
   estatus_salida: boolean;
   /** (09-oct-2026) La app cumple v2.2: entrega sus empresas y ejecuta bajas con bloqueo. */
   empresas_v22: boolean;
+  /** (09-oct-2026) La app exporta y tiene Descargas (v2.3): finiquito, copia y archivo. */
+  exportacion_v23: boolean;
   modo_datos: 'dedicada' | 'compartida';
   modulos: ModuloCatalogo[];
   planes: PlanCatalogo[];
@@ -134,6 +136,8 @@ export interface SuscripcionDetalle extends SuscripcionResumen, Vigencia {
   salidas_posibles: Partial<Record<TipoSalida, { permitido: boolean; razon: string | null }>>;
   /** (09-oct-2026) Exportación v2.3 más reciente (solo metadatos). */
   exportacion: ExportacionResumen | null;
+  /** (09-oct-2026) Copia a petición: una por trimestre incluida. */
+  copia: { usada: boolean; en_curso: boolean; siguiente: string };
 }
 
 export interface ExportacionResumen {
@@ -153,6 +157,10 @@ export interface ExportacionResumen {
   /** (09-oct-2026) Eliminación al terminar la retención y solicitudes de soporte abiertas. */
   eliminacion: 'exportacion_borrada' | 'app_eliminando' | 'base_borrada' | 'completa' | null;
   eliminada_en: string | null;
+  /** Archivo de empresa (v2.3 §4.5). */
+  archivo: 'archivando' | 'archivada' | null;
+  archivada_en: string | null;
+  empresa: string | null;
   solicitudes: SolicitudRespaldoResumen[];
 }
 
@@ -382,12 +390,15 @@ export interface VistaPreviaPlan {
 }
 
 /** (08-oct-2026) Salida de una suscripción: retirar la app, reactivarla o finiquitar. */
-export type TipoSalida = 'retiro' | 'reactivacion' | 'finiquito';
+export type TipoSalida = 'retiro' | 'reactivacion' | 'finiquito' | 'archivo'; // archivo: una empresa (09-oct-2026)
 
 export interface SolicitudSalida {
   id: number;
   suscripcion_id: number;
   tipo: TipoSalida;
+  empresa_id: number | null;
+  empresa_nombre: string | null;
+  empresa_rfc: string | null;
   estatus_anterior: EstatusSuscripcion | null;
   motivo: string;
   conformidad_tipo: 'correo' | 'documento' | null;
