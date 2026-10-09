@@ -216,6 +216,15 @@
                 <div><dt>Próximo pago</dt><dd>{{ s.fecha_proximo_pago | date: 'dd/MM/yyyy' }}</dd></div>
                 <div><dt>Contratación</dt><dd>{{ s.fecha_contratacion ? (s.fecha_contratacion | date: 'dd/MM/yyyy') : '—' }}</dd></div>
                 <div><dt>Suspensión automática</dt><dd>{{ s.suspension_automatica ? 'Sí' : 'No' }}{{ s.dias_gracia ? ' · ' + s.dias_gracia + ' día(s) de gracia' : '' }}</dd></div>
+                <div>
+                  <dt>Último aviso por correo</dt>
+                  <dd>
+                    @if (s.ultimo_aviso_correo; as av) {
+                      {{ av.hito === 'suspendida' ? 'Suspensión' : av.hito === '0' ? 'Vence hoy' : av.hito + ' día(s) antes' }}
+                      <span class="texto-tenue">· {{ av.enviado_en | date: 'dd/MM/yyyy HH:mm' }}</span>
+                    } @else { <span class="texto-tenue">Ninguno en este ciclo</span> }
+                  </dd>
+                </div>
               </dl>
               @if (s.activa_hasta) { <p class="texto-tenue">Prórroga activa hasta {{ s.activa_hasta | date: 'dd/MM/yyyy' }}.</p> }
               @if (s.suspension_motivo === 'vencimiento') { <p class="texto-error">Suspendida por vencimiento: al registrar el pago se reactiva.</p> }

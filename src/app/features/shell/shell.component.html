@@ -1,39 +1,61 @@
 <div class="admin-shell">
-  <header class="admin-shell__topbar">
+  <aside class="admin-shell__sidebar" aria-label="Menú principal">
     <div class="admin-shell__brand">
       <svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true">
         <rect width="32" height="32" rx="8" fill="#C2661D"/>
         <path d="M16 6l9 5v10l-9 5-9-5V11l9-5z" stroke="white" stroke-width="1.6" stroke-linejoin="round" opacity="0.9"/>
         <path d="M16 16l9-5M16 16v10M16 16L7 11" stroke="white" stroke-width="1.6" stroke-linejoin="round" opacity="0.9"/>
       </svg>
-      <span>Kernia — Panel de operación</span>
+      <span>KERNIA</span>
     </div>
 
-    <nav class="admin-shell__nav">
-      <a routerLink="/clientes" routerLinkActive="active">Clientes</a>
-      <a routerLink="/vigencias" routerLinkActive="active">Vigencias</a>
-      @if (puede('prorrogas.solicitar')) { <a routerLink="/prorrogas" routerLinkActive="active">Autorizaciones</a> }
-      <a routerLink="/catalogo/productos" routerLinkActive="active">Productos y planes</a>
-      @if (puede('operadores.gestionar')) { <a routerLink="/operadores" routerLinkActive="active">Operadores</a> }
-      @if (puede('escalafon.gestionar')) { <a routerLink="/escalafon" routerLinkActive="active">Escalafón</a> }
-      @if (puede('salidas.motivos')) { <a routerLink="/motivos-salida" routerLinkActive="active">Motivos de salida</a> }
-      @if (puede('correos.ver')) { <a routerLink="/correos" routerLinkActive="active">Correo</a> }
-      @if (puede('boveda.gestionar')) { <a routerLink="/boveda" routerLinkActive="active">Bóveda</a> }
-      @if (puede('auditoria.ver')) {
-        <a routerLink="/bitacora" routerLinkActive="active">Bitácora</a>
-        <a routerLink="/tenants" routerLinkActive="active" title="Modelo anterior, solo consulta">Tenants (heredado)</a>
-      }
+    <!-- (09-oct-2026) Árbol con líneas guía e iconos; ESTANDAR_ACL_Y_MENU_APPS_KERNIA.md §2. -->
+    <nav class="menu">
+      <ng-container *ngTemplateOutlet="arbol; context: { $implicit: menu(), padre: '', nivel: 0 }" />
     </nav>
+  </aside>
 
-    <div class="admin-shell__user">
-      @if (admin(); as u) {
-        <span class="admin-shell__user-name">{{ u.nombre }}@if (u.rol_nombre) { <small> · {{ u.rol_nombre }}</small> }</span>
+  <ng-template #arbol let-nodos let-padre="padre" let-nivel="nivel">
+    <ul class="menu__lista">
+      @for (n of nodos; track n.etiqueta) {
+        <li>
+          @if (n.hijos) {
+            <button type="button" class="menu__grupo" [class.menu__grupo--raiz]="nivel === 0"
+                    [class.menu__grupo--abierto]="estaAbierto(llave(padre, n))"
+                    [attr.aria-expanded]="estaAbierto(llave(padre, n))" (click)="alternar(padre, n)">
+              <app-menu-icono [nombre]="n.icono" [tam]="nivel === 0 ? 18 : 16" />
+              <span class="menu__texto">{{ n.etiqueta }}</span>
+              <span class="menu__flecha" aria-hidden="true">›</span>
+            </button>
+            <div class="menu__sub" [class.menu__sub--raiz]="nivel === 0" [class.menu__sub--abierto]="estaAbierto(llave(padre, n))">
+              <div class="menu__sub-interior">
+                <ng-container *ngTemplateOutlet="arbol; context: { $implicit: n.hijos, padre: llave(padre, n), nivel: nivel + 1 }" />
+              </div>
+            </div>
+          } @else {
+            <a class="menu__opcion" [routerLink]="n.ruta" routerLinkActive="menu__opcion--activa">
+              <app-menu-icono [nombre]="n.icono" />
+              <span class="menu__texto">{{ n.etiqueta }}</span>
+            </a>
+          }
+        </li>
       }
-      <button type="button" class="admin-shell__logout" (click)="logout()">Salir</button>
-    </div>
-  </header>
+    </ul>
+  </ng-template>
 
-  <main class="admin-shell__content">
-    <router-outlet />
-  </main>
+  <div class="admin-shell__principal">
+    <header class="admin-shell__topbar">
+      <span class="admin-shell__titulo">Panel de operación</span>
+      <div class="admin-shell__user">
+        @if (admin(); as u) {
+          <span class="admin-shell__user-name">{{ u.nombre }}@if (u.rol_nombre) { <small> · {{ u.rol_nombre }}</small> }</span>
+        }
+        <button type="button" class="admin-shell__logout" (click)="logout()">Salir</button>
+      </div>
+    </header>
+
+    <main class="admin-shell__content">
+      <router-outlet />
+    </main>
+  </div>
 </div>

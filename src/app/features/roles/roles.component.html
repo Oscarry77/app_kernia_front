@@ -1,0 +1,73 @@
+<div class="crud">
+  <div class="crud__header">
+    <div>
+      <h2 class="crud__title">Roles y accesos</h2>
+      <p class="crud__subtitle">
+        Qué puede hacer cada rol de Kernia. Los roles son fijos: esta pantalla es de consulta. El menú de cada operador muestra
+        solo las opciones con <b>Acceso</b>.
+      </p>
+    </div>
+  </div>
+
+  @if (matriz(); as m) {
+    <div class="filtros" role="tablist" aria-label="Rol">
+      @for (r of m.roles; track r.clave) {
+        <button type="button" role="tab" class="filtro" [class.activo]="rol() === r.clave" [attr.aria-selected]="rol() === r.clave"
+                (click)="rol.set(r.clave)">{{ r.nombre }}</button>
+      }
+    </div>
+
+    <div class="pestanas" role="tablist" aria-label="Módulo">
+      @for (mod of m.modulos; track mod.etiqueta; let i = $index) {
+        <button type="button" role="tab" class="pestana" [class.pestana--activa]="modulo() === i" [attr.aria-selected]="modulo() === i"
+                (click)="modulo.set(i)">
+          <app-menu-icono [nombre]="mod.icono" [tam]="18" /> {{ mod.etiqueta }}
+        </button>
+      }
+    </div>
+
+    <div class="crud__tabla-wrap">
+      <table class="crud__tabla matriz">
+        <thead>
+          <tr>
+            <th>Opción</th>
+            @for (c of columnas(); track c.clave) { <th class="matriz__col">{{ c.nombre }}</th> }
+            <th>Especiales</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of filas(); track $index) {
+            <tr [class.matriz__grupo]="f.nodo.hijos">
+              <td>
+                <span class="matriz__opcion" [style.padding-left.px]="f.nivel * 17">
+                  <app-menu-icono [nombre]="f.nodo.icono" /> {{ f.nodo.etiqueta }}
+                </span>
+                @if (f.nodo.nota) { <div class="texto-tenue matriz__nota" [style.padding-left.px]="f.nivel * 17 + 24">{{ f.nodo.nota }}</div> }
+              </td>
+              @for (c of columnas(); track c.clave) {
+                <td class="matriz__col">
+                  @if (!f.nodo.hijos) {
+                    @switch (valor(f.nodo, c.clave)) {
+                      @case (true) { <span class="si" aria-label="Sí">✓</span> }
+                      @case (false) { <span class="no" aria-label="No">✕</span> }
+                      @default { <span class="na" aria-label="No aplica">—</span> }
+                    }
+                  }
+                </td>
+              }
+              <td>
+                @for (e of f.nodo.especiales ?? []; track e.etiqueta) {
+                  <div [class.si]="e.roles[rol()]" [class.no]="!e.roles[rol()]">{{ e.roles[rol()] ? '✓' : '✕' }} {{ e.etiqueta }}</div>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (error()) {
+    <div class="crud__vacio texto-error">{{ error() }}</div>
+  } @else {
+    <div class="crud__vacio">Cargando...</div>
+  }
+</div>

@@ -60,12 +60,27 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/escalafon/escalafon.component').then(m => m.EscalafonComponent),
       },
-      // (07-oct-2026) Centro de correo.
+      // (07-oct-2026) Centro de correo. (09-oct-2026) Dos entradas del menú: enviados (Seguridad) y plantillas (Administración).
       {
         path: 'correos',
         canActivate: [permisoGuard('correos.ver')],
+        data: { vista: 'enviados' },
         loadComponent: () =>
           import('./features/correos/correos.component').then(m => m.CorreosComponent),
+      },
+      {
+        path: 'correos/plantillas',
+        canActivate: [permisoGuard('correos.ver')],
+        data: { vista: 'plantillas' },
+        loadComponent: () =>
+          import('./features/correos/correos.component').then(m => m.CorreosComponent),
+      },
+      // (09-oct-2026) Roles y accesos (consulta).
+      {
+        path: 'roles',
+        canActivate: [permisoGuard('operadores.gestionar')],
+        loadComponent: () =>
+          import('./features/roles/roles.component').then(m => m.RolesComponent),
       },
       // (07-oct-2026) Bóveda: solo el superadministrador.
       {

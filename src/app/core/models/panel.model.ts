@@ -81,6 +81,8 @@ export interface Vigencia {
   suspension_motivo: 'vencimiento' | 'manual' | null;
   activa_hasta: string | null;
   aviso: AvisoVigencia | null;
+  /** (09-oct-2026) Último aviso de vencimiento entregado por correo en el ciclo actual. */
+  ultimo_aviso_correo?: { hito: string; enviado_en: string } | null;
 }
 
 export interface FilaVigencia extends Vigencia {

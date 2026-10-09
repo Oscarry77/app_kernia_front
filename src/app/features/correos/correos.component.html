@@ -1,15 +1,11 @@
 <div class="crud">
   <div class="crud__header">
     <div>
-      <h2 class="crud__title">Centro de correo</h2>
+      <h2 class="crud__title">{{ vista() === 'plantillas' ? 'Plantillas de correo' : 'Correos enviados' }}</h2>
       <p class="crud__subtitle">
         Los correos que envía Kernia y su resultado. Kernia guarda solo a quién, cuándo y qué plantilla; nunca el contenido
         ni las contraseñas que lleven.
       </p>
-    </div>
-    <div class="crud__actions">
-      <button class="btn" type="button" [class.btn--primary]="vista() === 'enviados'" [class.btn--secondary]="vista() !== 'enviados'" (click)="vista.set('enviados')">Enviados</button>
-      <button class="btn" type="button" [class.btn--primary]="vista() === 'plantillas'" [class.btn--secondary]="vista() !== 'plantillas'" (click)="vista.set('plantillas')">Plantillas</button>
     </div>
   </div>
 

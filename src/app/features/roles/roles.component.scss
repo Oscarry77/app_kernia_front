@@ -1,0 +1,50 @@
+@use '../../styles/comercializa-variables' as v;
+
+.filtros { display: flex; flex-wrap: wrap; gap: v.$spacing-xs; }
+
+.filtro {
+  border: 1px solid v.$border-card;
+  background: v.$bg-card;
+  color: v.$text-secondary;
+  border-radius: v.$radius-full;
+  padding: 6px 14px;
+  font-size: v.$font-size-sm;
+  cursor: pointer;
+
+  &.activo { border-color: v.$primary; background: v.$primary-light; color: v.$text-primary; }
+  &:focus-visible { outline: 2px solid v.$primary; outline-offset: 2px; }
+}
+
+.pestanas {
+  display: flex;
+  gap: v.$spacing-xs;
+  border-bottom: 1px solid v.$border-card;
+}
+
+.pestana {
+  display: inline-flex;
+  align-items: center;
+  gap: v.$spacing-sm;
+  padding: v.$spacing-sm v.$spacing-md;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: v.$text-secondary;
+  font: inherit;
+  font-weight: v.$font-weight-semibold;
+  cursor: pointer;
+
+  &--activa { color: v.$primary-hover; border-bottom-color: v.$primary; }
+  &:focus-visible { outline: 2px solid v.$primary; outline-offset: -2px; }
+}
+
+.matriz {
+  &__opcion { display: inline-flex; align-items: center; gap: 8px; }
+  &__grupo td { font-weight: v.$font-weight-semibold; }
+  &__col { width: 84px; text-align: center; }
+  &__nota { font-size: v.$font-size-xs; margin-top: 2px; }
+}
+
+.si { color: v.$success; }
+.no { color: v.$text-muted; }
+.na { color: v.$text-muted; opacity: 0.5; }

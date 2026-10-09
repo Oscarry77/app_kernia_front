@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import type { HttpErrorResponse } from '@angular/common/http';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 
 import { CorreosService, type CorreoEnviado, type PlantillaCorreo } from '../../core/services/correos.service';
 import { mensajeError } from '../clientes/panel-ui';
@@ -24,8 +24,10 @@ import { mensajeError } from '../clientes/panel-ui';
 export class CorreosComponent implements OnInit {
   private service = inject(CorreosService);
   private sanitizer = inject(DomSanitizer);
+  private route = inject(ActivatedRoute);
 
-  vista = signal<'enviados' | 'plantillas'>('enviados');
+  // (09-oct-2026) La vista la fija la entrada del menú (Seguridad > Correos enviados / Administración > Plantillas).
+  vista = signal<'enviados' | 'plantillas'>(this.route.snapshot.data['vista'] === 'plantillas' ? 'plantillas' : 'enviados');
 
   filas = signal<CorreoEnviado[]>([]);
   pagina = signal(1);
